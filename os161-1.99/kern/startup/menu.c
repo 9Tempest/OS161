@@ -75,7 +75,9 @@ getinterval(time_t s1, uint32_t ns1, time_t s2, uint32_t ns2,
 /*
  *cmd that enables print thread debug msg
  */
-static void cmd_db_threads(int nargs, char **args){
+static int cmd_db_threads(int nargs, char **args){
+	(void)nargs;
+	(void)args;
 	dbflags = DB_THREADS;
 	
 }
