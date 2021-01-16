@@ -79,7 +79,7 @@ static int cmd_db_threads(int nargs, char **args){
 	(void)nargs;
 	(void)args;
 	dbflags = DB_THREADS;
-	
+	return 0;
 }
 
 /*
