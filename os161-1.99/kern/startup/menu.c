@@ -73,6 +73,14 @@ getinterval(time_t s1, uint32_t ns1, time_t s2, uint32_t ns2,
 // Command menu functions 
 
 /*
+ *cmd that enables print thread debug msg
+ */
+static void cmd_db_threads(){
+	dbflags = DB_THREADS;
+	
+}
+
+/*
  * Function for a thread that runs an arbitrary userlevel program by
  * name.
  *
@@ -83,6 +91,8 @@ getinterval(time_t s1, uint32_t ns1, time_t s2, uint32_t ns2,
  * It copies the program name because runprogram destroys the copy
  * it gets by passing it to vfs_open(). 
  */
+
+
 static
 void
 cmd_progthread(void *ptr, unsigned long nargs)
@@ -437,6 +447,7 @@ static const char *opsmenu[] = {
 	"[sync]    Sync filesystems          ",
 	"[panic]   Intentional panic         ",
 	"[q]       Quit and shut down        ",
+	"[dth]     Following cmd output db_thread",
 	NULL
 };
 
@@ -549,6 +560,7 @@ static struct {
 	{ "q",		cmd_quit },
 	{ "exit",	cmd_quit },
 	{ "halt",	cmd_quit },
+	{"dth", cmd_db_threads},
 
 #if OPT_SYNCHPROBS
 	/* in-kernel synchronization problem(s) */
