@@ -79,6 +79,7 @@ static int cmd_db_threads(int nargs, char **args){
 	(void)nargs;
 	(void)args;
 	dbflags = DB_THREADS;
+	kprintf("DB_THREADS enabled! ");
 	return 0;
 }
 
