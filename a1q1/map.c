@@ -15,13 +15,17 @@
 #include <string.h>
 #include <pthread.h>
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cv = PTHREAD_COND_INITIALIZER;
+const int THREAD_CNT = 4;
+
 
 struct args
 {
     struct Article ** article_start_ptr;
     int len;
     char * word;
-    int * total_cnt;
+    volatile int * total_cnt;
+    volatile int * cv_cnt;
 };
 
 //count the number of words in one article
@@ -47,8 +51,12 @@ void* CountSubOccurrences(void* argus){
 
     pthread_mutex_lock(&mutex);
     *data->total_cnt += cnt;
+    *data->cv_cnt += 1;
+    if (*data->cv_cnt == THREAD_CNT){
+        pthread_cond_signal(&cv);
+    }
     pthread_mutex_unlock(&mutex);
-    return NULL;
+    pthread_exit(NULL);
 }
 
 
@@ -71,7 +79,8 @@ void* CountSubOccurrences(void* argus){
 int CountOccurrences( struct  Library * lib, char * word )
 {
     //init the number of threads, and split the articles to 4 parts
-    int cnt_total = 0;
+    volatile int cnt_total = 0;
+    volatile int cv_cnt = 0;
     int part_len = lib->numArticles / 4;
     struct Article** part1_articles = lib->articles;
     struct Article** part2_articles = lib->articles + part_len;
@@ -80,19 +89,34 @@ int CountOccurrences( struct  Library * lib, char * word )
 
     //init threads and its args
     pthread_t thread_1, thread_2, thread_3, thread_4;
-    struct args t1_args = {part1_articles, part_len, word, &cnt_total};
-    struct args t2_args = {part2_articles, part_len, word, &cnt_total};
-    struct args t3_args = {part3_articles, part_len, word, &cnt_total};
-    struct args t4_args = {part4_articles, lib->numArticles - 3 * part_len, word, &cnt_total};
+    
+    struct args t1_args = {part1_articles, part_len, word, &cnt_total, &cv_cnt};
+    struct args t2_args = {part2_articles, part_len, word, &cnt_total, &cv_cnt};
+    struct args t3_args = {part3_articles, part_len, word, &cnt_total, &cv_cnt};
+    struct args t4_args = {part4_articles, lib->numArticles - 3 * part_len, word, &cnt_total, &cv_cnt};
     //create threads
     pthread_create(&thread_1, NULL, CountSubOccurrences, &t1_args);
     pthread_create(&thread_2, NULL, CountSubOccurrences, &t2_args);
     pthread_create(&thread_3, NULL, CountSubOccurrences, &t3_args);
     pthread_create(&thread_4, NULL, CountSubOccurrences, &t4_args);
-    pthread_join(thread_1, NULL);
-    pthread_join(thread_2, NULL);
-    pthread_join(thread_3, NULL);
-    pthread_join(thread_4, NULL);
+
+    //provide a barrier
+
+
+    pthread_mutex_lock(&mutex);
+
+    while (cv_cnt != THREAD_CNT){
+        pthread_cond_wait(&cv, &mutex);
+    }
+    
+    pthread_mutex_unlock(&mutex);
+    
+    //clean up
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&cv);
+    
+
+
 
 
 
