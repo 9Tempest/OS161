@@ -70,7 +70,7 @@ void
 consume_enter(struct resource *resource)
 {
     pthread_mutex_lock(&resource->mutex);
-	while (resource->num_consumers > resource->ratio * resource->num_producers)
+	while (resource->num_consumers >= resource->ratio * resource->num_producers)
 	{
 		pthread_cond_wait(&resource->cond, &resource->mutex);
 	}
