@@ -17,6 +17,9 @@
 pthread_mutex_t done_mutex= PTHREAD_MUTEX_INITIALIZER;
 bool done = false;
 
+
+
+
 bool
 check_done(void)
 {
@@ -39,11 +42,12 @@ set_done(bool val)
 
 struct resource {
 	int counter;			/* Number of operations */
-	long num_consumers;		/* Number of active consumers in the resource */
-	long num_producers;		/* Number of active producers in the resource */
+	volatile long num_consumers;		/* Number of active consumers in the resource */
+	volatile long num_producers;		/* Number of active producers in the resource */
 	int ratio;			/* Ratio of producers to consumers */
 	pthread_cond_t cond;		/* Resource condition variable */
 	pthread_mutex_t mutex;		/* Resource mutex */
+	pthread_cond_t cond_produce_exit;
 };
 
 void
@@ -69,11 +73,13 @@ rest(void)
 void
 consume_enter(struct resource *resource)
 {
+	
     pthread_mutex_lock(&resource->mutex);
 	while (resource->num_consumers >= resource->ratio * resource->num_producers)
 	{
 		pthread_cond_wait(&resource->cond, &resource->mutex);
 	}
+	
 	resource->num_consumers++;
 	
 }
@@ -82,7 +88,11 @@ void
 consume_exit(struct resource *resource)
 {
     resource->num_consumers--;
+	//printf("There are %ld consumers here\n", resource->num_consumers);
+	
 	pthread_cond_signal(&resource->cond);
+	
+	pthread_cond_signal(&resource->cond_produce_exit);
 	pthread_mutex_unlock(&resource->mutex);
 }
 
@@ -91,14 +101,18 @@ produce_enter(struct resource *resource)
 {
     pthread_mutex_lock(&resource->mutex);
 	resource->num_producers++;
-	pthread_cond_signal(&resource->cond);
+	for (int i = 0; i < resource->ratio; i++){
+		pthread_cond_signal(&resource->cond);
+	}
+	pthread_cond_signal(&resource->cond_produce_exit);
+	
 }
 
 void
 produce_exit(struct resource *resource)
 {
-	while(resource->num_consumers > resource->ratio * (resource->num_producers-1)){
-		pthread_cond_wait(&resource->cond, &resource->mutex);
+	while(resource->num_consumers  > resource->ratio * (resource->num_producers-1)){
+		pthread_cond_wait(&resource->cond_produce_exit, &resource->mutex);
 	}
     resource->num_producers--;
 	pthread_mutex_unlock(&resource->mutex);
@@ -110,6 +124,7 @@ consume(void *data)
 {
 	struct resource *resource = (struct resource *) data;
 	int *ret;
+
 
 	ret = malloc(sizeof(*ret));
 	if (ret == NULL) {
@@ -130,9 +145,9 @@ consume(void *data)
         int num_allowed = resource->num_producers * resource->ratio;
         if ( resource->num_consumers > num_allowed )
             printf( "Fail.  Incorrect ratio. %d %ld\n", num_allowed, resource->num_consumers );
-
+		//printf("I am exiting\n");
 		consume_exit(resource);
-
+		
 		/* Wait for a bit. */
 		rest();
 	}
@@ -147,6 +162,7 @@ produce(void *data)
 	struct resource *resource = (struct resource *) data;
 	int *ret;
 
+	
 	ret = malloc(sizeof(*ret));
 	if (ret == NULL) {
 		perror("malloc");
@@ -170,6 +186,7 @@ produce(void *data)
 	}
 
 	*ret = 0;
+
 	pthread_exit(ret);
 }
 
@@ -186,6 +203,11 @@ resource_setup(long num_consumers, long num_producers, long ratio)
 	}
 
 	error = pthread_cond_init(&resource->cond, NULL);
+	if (error != 0) {
+		fprintf(stderr, "pthread_cond_init: %s", strerror(error));
+		return (NULL);
+	}
+	error = pthread_cond_init(&resource->cond_produce_exit, NULL);
 	if (error != 0) {
 		fprintf(stderr, "pthread_cond_init: %s", strerror(error));
 		return (NULL);
