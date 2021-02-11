@@ -122,4 +122,3 @@ int CountOccurrences( struct  Library * lib, char * word )
 
     return cnt_total;
 }
-

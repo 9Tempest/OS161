@@ -28,4 +28,3 @@
 int CountOccurrences( struct  Library * lib, char * word );
 
 #endif
-
