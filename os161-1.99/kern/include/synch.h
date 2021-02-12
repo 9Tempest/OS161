@@ -76,7 +76,7 @@ struct lock {
         char *lk_name;
         bool held;
         struct thread* owner;
-        struct spinlock* spinlock;
+        struct spinlock spinlock;
         struct wchan *wchan;
 
         // add what you need here
