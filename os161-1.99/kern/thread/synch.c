@@ -150,44 +150,51 @@ V(struct semaphore *sem)
 struct lock *
 lock_create(const char *name)
 {
-        struct lock *lock;
+    struct lock *lock;
 
-        lock = kmalloc(sizeof(struct lock));
-        if (lock == NULL) {
-                return NULL;
-        }
+    lock = kmalloc(sizeof(struct lock));
+    if (lock == NULL) {
+            return NULL;
+    }
 
-        lock->lk_name = kstrdup(name);
-        if (lock->lk_name == NULL) {
-                kfree(lock);
-                return NULL;
-        }
-        
-        // add stuff here as needed
+    lock->lk_name = kstrdup(name);
+    if (lock->lk_name == NULL) {
+            kfree(lock);
+            return NULL;
+    }
+    
+    // add stuff here as needed
 
-        //init spinlock
-        spinlock_init(&lock->spinlock);
+    
+    //init wchan
+    lock->wchan = wchan_create(lock->lk_name);
+if (lock->wchan == NULL) {
+    kfree(lock->lk_name);
+    kfree(lock);
+    return NULL;
+}
+    
+    //init spinlock
+    spinlock_init(&lock->spinlock);
 
-        //init wchan
-        lock->wchan = wchan_create(name);
-        
-        //init curr info
-        lock->held = false;
-        lock->owner = NULL;
-        
-        return lock;
+
+    //init curr info
+    lock->held = false;
+    lock->owner = NULL;
+    
+    return lock;
 }
 
 void
 lock_destroy(struct lock *lock)
 {
-        KASSERT(lock != NULL);
+    KASSERT(lock);
 
-        // add stuff here as needed
-        spinlock_cleanup(&lock->spinlock);
-        wchan_destroy(lock->wchan);
-        kfree(lock->lk_name);
-        kfree(lock);
+    // add stuff here as needed
+    spinlock_cleanup(&lock->spinlock);
+    wchan_destroy(lock->wchan);
+    kfree(lock->lk_name);
+    kfree(lock);
 
         
 }
@@ -195,41 +202,46 @@ lock_destroy(struct lock *lock)
 void
 lock_acquire(struct lock *lock)
 {
-        KASSERT(!lock_do_i_hold(lock));
-
-        spinlock_acquire(&lock->spinlock);
-        while(lock->held){
-                wchan_lock(lock->wchan);
-                spinlock_release(&lock->spinlock);
-                wchan_sleep(lock->wchan);
-                spinlock_acquire(&lock->spinlock);
-        }
-        lock->held = true;
-        lock->owner = curthread;
+    KASSERT(lock);
+    KASSERT(!lock_do_i_hold(lock));
+    
+    spinlock_acquire(&lock->spinlock);
+    while(lock->held){
+        wchan_lock(lock->wchan);
         spinlock_release(&lock->spinlock);
+        wchan_sleep(lock->wchan);
+        spinlock_acquire(&lock->spinlock);
+    }
+    lock->held = true;
+    lock->owner = curthread;
+    spinlock_release(&lock->spinlock);
 
 }
 
 void
 lock_release(struct lock *lock)
 {
-  if (lock_do_i_hold(lock)){
-        spinlock_acquire(&lock->spinlock);
-        lock->held = false;
-        lock->owner = NULL;
-        spinlock_release(&lock->spinlock);
-  }  
+    KASSERT(lock);
+    KASSERT(lock_do_i_hold(lock));
+
+    spinlock_acquire(&lock->spinlock);
+    lock->held = false;
+    lock->owner = NULL;
+    wchan_wakeone(lock->wchan);
+    spinlock_release(&lock->spinlock); 
 }
 
 bool
 lock_do_i_hold(struct lock *lock)
 {
-        bool ret;
-        spinlock_acquire(&lock->spinlock);
-        ret = (lock->owner == curthread);
-        spinlock_release(&lock->spinlock);
+    KASSERT(lock);
 
-        return ret; // dummy until code gets written
+    bool ret;
+    spinlock_acquire(&lock->spinlock);
+    ret = (lock->owner == curthread);
+    spinlock_release(&lock->spinlock);
+
+    return ret; // dummy until code gets written
 }
 
 ////////////////////////////////////////////////////////////
