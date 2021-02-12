@@ -24,12 +24,12 @@ struct args
     struct Article ** article_start_ptr;
     int len;
     char * word;
-    volatile int * total_cnt;
-    volatile int * cv_cnt;
+    int * total_cnt;
+    int * cv_cnt;
 };
 
 //count the number of words in one article
-int CountOneArticle(struct Article * article, char * word){
+int CountOneArticle(struct Article* article, char * word){
     if (!article || ! word) return 0;
     int cnt = 0;
     for (int i = 0; i < article->numWords; i++){
@@ -79,8 +79,8 @@ void* CountSubOccurrences(void* argus){
 int CountOccurrences( struct  Library * lib, char * word )
 {
     //init the number of threads, and split the articles to 4 parts
-    volatile int cnt_total = 0;
-    volatile int cv_cnt = 0;
+    int cnt_total = 0;
+    int cv_cnt = 0;
     int part_len = lib->numArticles / 4;
     struct Article** part1_articles = lib->articles;
     struct Article** part2_articles = lib->articles + part_len;
