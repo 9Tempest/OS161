@@ -42,12 +42,12 @@ set_done(bool val)
 
 struct resource {
 	int counter;			/* Number of operations */
-	volatile long num_consumers;		/* Number of active consumers in the resource */
-	volatile long num_producers;		/* Number of active producers in the resource */
+	long num_consumers;		/* Number of active consumers in the resource */
+	long num_producers;		/* Number of active producers in the resource */
 	int ratio;			/* Ratio of producers to consumers */
 	pthread_cond_t cond;		/* Resource condition variable */
 	pthread_mutex_t mutex;		/* Resource mutex */
-	pthread_cond_t cond_produce_exit;
+	pthread_cond_t cond_produce_exit; //cond variable for producer exit
 };
 
 void
