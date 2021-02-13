@@ -167,15 +167,15 @@ lock_create(const char *name)
 
     
     //init wchan
-    lock->wchan = wchan_create(lock->lk_name);
-if (lock->wchan == NULL) {
-    kfree(lock->lk_name);
-    kfree(lock);
-    return NULL;
-}
+    lock->lk_wchan = wchan_create(lock->lk_name);
+    if (lock->lk_wchan == NULL) {
+        kfree(lock->lk_name);
+        kfree(lock);
+        return NULL;
+    }
     
     //init spinlock
-    spinlock_init(&lock->spinlock);
+    spinlock_init(&lock->lk_spinlock);
 
 
     //init curr info
@@ -191,8 +191,8 @@ lock_destroy(struct lock *lock)
     KASSERT(lock);
 
     // add stuff here as needed
-    spinlock_cleanup(&lock->spinlock);
-    wchan_destroy(lock->wchan);
+    spinlock_cleanup(&lock->lk_spinlock);
+    wchan_destroy(lock->lk_wchan);
     kfree(lock->lk_name);
     kfree(lock);
 
@@ -205,16 +205,16 @@ lock_acquire(struct lock *lock)
     KASSERT(lock);
     KASSERT(!lock_do_i_hold(lock));
     
-    spinlock_acquire(&lock->spinlock);
+    spinlock_acquire(&lock->lk_spinlock);
     while(lock->held){
-        wchan_lock(lock->wchan);
-        spinlock_release(&lock->spinlock);
-        wchan_sleep(lock->wchan);
-        spinlock_acquire(&lock->spinlock);
+        wchan_lock(lock->lk_wchan);
+        spinlock_release(&lock->lk_spinlock);
+        wchan_sleep(lock->lk_wchan);
+        spinlock_acquire(&lock->lk_spinlock);
     }
     lock->held = true;
     lock->owner = curthread;
-    spinlock_release(&lock->spinlock);
+    spinlock_release(&lock->lk_spinlock);
 
 }
 
@@ -224,11 +224,11 @@ lock_release(struct lock *lock)
     KASSERT(lock);
     KASSERT(lock_do_i_hold(lock));
 
-    spinlock_acquire(&lock->spinlock);
+    spinlock_acquire(&lock->lk_spinlock);
     lock->held = false;
     lock->owner = NULL;
-    wchan_wakeone(lock->wchan);
-    spinlock_release(&lock->spinlock); 
+    wchan_wakeone(lock->lk_wchan);
+    spinlock_release(&lock->lk_spinlock); 
 }
 
 bool
@@ -237,9 +237,9 @@ lock_do_i_hold(struct lock *lock)
     KASSERT(lock);
 
     bool ret;
-    spinlock_acquire(&lock->spinlock);
+    spinlock_acquire(&lock->lk_spinlock);
     ret = (lock->owner == curthread);
-    spinlock_release(&lock->spinlock);
+    spinlock_release(&lock->lk_spinlock);
 
     return ret; // dummy until code gets written
 }
