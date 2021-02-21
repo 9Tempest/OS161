@@ -146,7 +146,7 @@ V(struct semaphore *sem)
 ////////////////////////////////////////////////////////////
 //
 // Lock.
-
+#if OPT_A2
 struct lock *
 lock_create(const char *name)
 {
@@ -320,3 +320,4 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 
         wchan_wakeall(cv->cv_wchan);
 }
+#endif /* OPT_A2 */
