@@ -50,6 +50,7 @@
 #include <vfs.h>
 #include <synch.h>
 #include <kern/fcntl.h>  
+#include "opt-A2.h"
 
 /*
  * The process for the kernel; this holds all the kernel-only threads.
@@ -61,6 +62,7 @@ struct proc *kproc;
  */
 #ifdef UW
 /* count of the number of processes, excluding kproc */
+
 static volatile unsigned int proc_count;
 /* provides mutual exclusion for proc_count */
 /* it would be better to use a lock here, but we use a semaphore because locks are not implemented in the base kernel */ 
@@ -68,6 +70,10 @@ static struct semaphore *proc_count_mutex;
 /* used to signal the kernel menu thread when there are no processes */
 struct semaphore *no_proc_sem;   
 #endif  // UW
+
+//#if OPT_A2
+volatile pid_t pid_cnt;
+//#endif
 
 
 
@@ -102,6 +108,13 @@ proc_create(const char *name)
 #ifdef UW
 	proc->console = NULL;
 #endif // UW
+
+//#if OPT_A2
+	proc->p_thread_lock = lock_create("p_thread_lock");
+	proc->p_cv = cv_create("p_cv");
+	array_init(&proc->children);
+	proc->parent = NULL;
+//#endif
 
 	return proc;
 }
@@ -183,7 +196,11 @@ proc_destroy(struct proc *proc)
 	}
 	V(proc_count_mutex);
 #endif // UW
-	
+//#if OPT_A2
+	lock_destroy(proc->p_thread_lock);
+	//array_destroy(&proc->children);
+	cv_destroy(proc->p_cv);
+//#endif
 
 }
 
@@ -208,6 +225,9 @@ proc_bootstrap(void)
     panic("could not create no_proc_sem semaphore\n");
   }
 #endif // UW 
+#if OPT_A2
+	pid_cnt = (pid_t)100;
+#endif
 }
 
 /*
@@ -270,6 +290,13 @@ proc_create_runprogram(const char *name)
 	proc_count++;
 	V(proc_count_mutex);
 #endif // UW
+
+#if OPT_A2
+	P(proc_count_mutex); 
+	proc->pid = pid_cnt;
+	pid_cnt++;
+	V(proc_count_mutex);
+#endif
 
 	return proc;
 }

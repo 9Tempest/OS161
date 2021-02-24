@@ -38,6 +38,7 @@
 
 #include <spinlock.h>
 #include <thread.h> /* required for struct threadarray */
+#include "opt-A2.h"
 
 struct addrspace;
 struct vnode;
@@ -67,6 +68,18 @@ struct proc {
      it has opened, not just the console. */
   struct vnode *console;                /* a vnode for the console device */
 #endif
+
+//#if OPT_A2
+
+	pid_t pid;
+	struct array children;
+	struct proc* parent;
+	struct lock* p_thread_lock;
+	struct cv* p_cv;
+
+//#endif
+
+
 
 	/* add more material here as needed */
 };

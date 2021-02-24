@@ -9,6 +9,9 @@
 #include <thread.h>
 #include <addrspace.h>
 #include <copyinout.h>
+#include "opt-A2.h"
+
+
 
   /* this implementation of sys__exit does not do anything with the exit code */
   /* this needs to be fixed to get exit() and waitpid() working properly */
@@ -92,3 +95,32 @@ sys_waitpid(pid_t pid,
   return(0);
 }
 
+int sys_fork(struct trampframe* tf, pid_t* retval){
+  //step1 create child proc
+  struct proc* child = proc_create_runprogram("child");
+  if (!child) {
+    *retval = (pid_t)-1;
+    return -1;
+  }
+
+  //step2 create as and copy
+  struct addrspace* as;
+  int error = as_copy(curproc_getas(), &as);
+  if (error){
+    *retval = (pid_t)-1;
+    return -1;
+  }
+  child->p_addrspace = as;
+
+  //step3 create child/parent relation
+  child->parent = curproc;
+  array_add(&curproc->children, &curproc, (unsigned*)&error);
+  if (error){
+    *retval = (pid_t)-1;
+    return error;
+  }
+
+  
+
+  return 0;
+}
