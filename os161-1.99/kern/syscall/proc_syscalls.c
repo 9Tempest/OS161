@@ -56,9 +56,9 @@ void sys__exit(int exitcode) {
 int
 sys_getpid(pid_t *retval)
 {
-  /* for now, this is just a stub that always returns a PID of 1 */
-  /* you need to fix this to make it work properly */
-  *retval = 1;
+  spinlock_acquire(&curproc->p_lock);
+  *retval = 0
+  spinlock_release(&curproc->p_lock);
   return(0);
 }
 
@@ -95,6 +95,8 @@ sys_waitpid(pid_t pid,
   return(0);
 }
 
+
+
 int sys_fork(struct trampframe* tf, pid_t* retval){
   //step1 create child proc
   struct proc* child = proc_create_runprogram("child");
@@ -110,17 +112,40 @@ int sys_fork(struct trampframe* tf, pid_t* retval){
     *retval = (pid_t)-1;
     return -1;
   }
+  spinlock_acquire(&child->p_lock);
   child->p_addrspace = as;
+  spinlock_release(&child->lock);
 
   //step3 create child/parent relation
+  spinlock_acquire(&curproc->p_lock);
   child->parent = curproc;
   array_add(&curproc->children, &curproc, (unsigned*)&error);
+  spinlock_release(&curproc->p_lock);
   if (error){
     *retval = (pid_t)-1;
     return error;
   }
 
-  
+  //step4 create a thread
+  struct trampframe* parent_tf = kmalloc(sizeof(struct trampframe));
+  if (!parent_tf) {
+    *retval = (pid_t)-1;
+    return -1;
+  }
+  spinlock_acquire(&curproc->p_lock);
+  error = copy_trapframe(tf, parent_tf);
+  spinlock_release(&curproc->p_lock);
+  if (error){
+    *retval = (pid_t)-1;
+    return error;
+  }
+  error = thread_fork("thread_c", child, enter_forked_process, (void *)parent_tf, 1);
+  if (error){
+    *retval = (pid_t)-1;
+    return error;
+  }
 
+  //step5 return pid
+  *retval = child->pid;
   return 0;
 }
