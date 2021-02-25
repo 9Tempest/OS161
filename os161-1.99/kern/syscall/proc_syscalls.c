@@ -9,8 +9,8 @@
 #include <thread.h>
 #include <addrspace.h>
 #include <copyinout.h>
+#include <mips/trapframe.h>
 #include "opt-A2.h"
-#include <trapframe.h>
 
 
 
