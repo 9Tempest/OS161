@@ -57,7 +57,7 @@ int
 sys_getpid(pid_t *retval)
 {
   spinlock_acquire(&curproc->p_lock);
-  *retval = 0
+  *retval = 0;
   spinlock_release(&curproc->p_lock);
   return(0);
 }
@@ -114,7 +114,7 @@ int sys_fork(struct trampframe* tf, pid_t* retval){
   }
   spinlock_acquire(&child->p_lock);
   child->p_addrspace = as;
-  spinlock_release(&child->lock);
+  spinlock_release(&child->p_lock);
 
   //step3 create child/parent relation
   spinlock_acquire(&curproc->p_lock);
@@ -127,7 +127,7 @@ int sys_fork(struct trampframe* tf, pid_t* retval){
   }
 
   //step4 create a thread
-  struct trampframe* parent_tf = kmalloc(sizeof(struct trampframe));
+  struct trapframe* parent_tf = kmalloc(sizeof(struct trapframe));
   if (!parent_tf) {
     *retval = (pid_t)-1;
     return -1;

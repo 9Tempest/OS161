@@ -190,4 +190,5 @@ enter_forked_process(void* tf_p, unsigned long argc)
 	tf_c.tf_a3 = 0;
 	tf_c.tf_epc += 4;
 	kfree(tf_p);
+	mips_usermode(&tf_c);
 }
