@@ -99,7 +99,7 @@ struct trapframe {
  * be on the thread's own stack or bad things will happen.
  */
 void mips_usermode(struct trapframe *tf);
-
+int copy_trapframe(struct trapframe* tf1, struct trapframe* tf2);
 /*
  * Arrays used to load the kernel stack and curthread on trap entry.
  */
