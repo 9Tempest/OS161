@@ -10,6 +10,7 @@
 #include <addrspace.h>
 #include <copyinout.h>
 #include "opt-A2.h"
+#include <trapframe.h>
 
 
 
@@ -97,7 +98,7 @@ sys_waitpid(pid_t pid,
 
 
 
-int sys_fork(struct trampframe* tf, pid_t* retval){
+int sys_fork(struct trapframe* tf, pid_t* retval){
   //step1 create child proc
   struct proc* child = proc_create_runprogram("child");
   if (!child) {
