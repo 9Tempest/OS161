@@ -99,57 +99,11 @@ struct trapframe {
  * be on the thread's own stack or bad things will happen.
  */
 void mips_usermode(struct trapframe *tf);
-int copy_trapframe(struct trapframe* tf1, struct trapframe* tf2);
 /*
  * Arrays used to load the kernel stack and curthread on trap entry.
  */
 extern vaddr_t cpustacks[];
 extern vaddr_t cputhreads[];
 
-#if OPT_A2
-int copy_trapframe(struct trapframe* tf1, struct trapframe* tf2){
-	if (!tf1 || !tf2) return -1;
-	tf2->tf_vaddr = tf1->tf_vaddr;
-	tf2->tf_status = tf1->tf_status;
-	tf2->tf_cause = tf1->tf_cause;
-	tf2->tf_lo = tf1->tf_lo;
-	tf2->tf_hi = tf1->tf_hi;
-	tf2->tf_ra = tf1->tf_ra;
-	tf2->tf_at = tf1->tf_at;
-	tf2->tf_v0 = tf1->tf_v0;
-	tf2->tf_v1 = tf1->tf_v1;
-	tf2->tf_a0 = tf1->tf_a0;
-	tf2->tf_a1 = tf1->tf_a1;
-	tf2->tf_a2 = tf1->tf_a2;
-	tf2->tf_a3 = tf1->tf_a3;
-	tf2->tf_t0 = tf1->tf_t0;
-	tf2->tf_t1 = tf1->tf_t1;
-	tf2->tf_t2 = tf1->tf_t2;
-	tf2->tf_t3 = tf1->tf_t3;
-	tf2->tf_t4 = tf1->tf_t4;
-	tf2->tf_t5 = tf1->tf_t5;
-	tf2->tf_t6 = tf1->tf_t6;
-	tf2->tf_t7 = tf1->tf_t7;
-	tf2->tf_s0 = tf1->tf_s0;
-	tf2->tf_s1 = tf1->tf_s1;
-	tf2->tf_s2 = tf1->tf_s2;
-	tf2->tf_s3 = tf1->tf_s3;
-	tf2->tf_s4 = tf1->tf_s4;
-	tf2->tf_s5 = tf1->tf_s5;
-	tf2->tf_s6 = tf1->tf_s6;
-	tf2->tf_s7 = tf1->tf_s7;
-	tf2->tf_t8 = tf1->tf_t8;
-	tf2->tf_t9 = tf1->tf_t9;
-	tf2->tf_k0 = tf1->tf_k0;
-	tf2->tf_k1 = tf1->tf_k1;
-	tf2->tf_gp = tf1->tf_gp;
-	tf2->tf_sp = tf1->tf_sp;
-	tf2->tf_s8 = tf1->tf_s8;
-	tf2->tf_epc = tf1->tf_epc;
-
-
-	return 0;
-}
-#endif
 
 #endif /* _MIPS_TRAPFRAME_H_ */

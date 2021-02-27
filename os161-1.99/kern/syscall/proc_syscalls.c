@@ -134,7 +134,11 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
     return -1;
   }
   spinlock_acquire(&curproc->p_lock);
-  error = copy_trapframe(tf, parent_tf);
+  if (!tf){
+    error = 1;
+  } else {
+    *parent_tf = *tf;
+  }
   spinlock_release(&curproc->p_lock);
   if (error){
     *retval = (pid_t)-1;

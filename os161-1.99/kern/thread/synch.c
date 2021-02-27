@@ -39,7 +39,7 @@
 #include <thread.h>
 #include <current.h>
 #include <synch.h>
-
+#include "opt-A2.h"
 ////////////////////////////////////////////////////////////
 //
 // Semaphore.
@@ -146,7 +146,7 @@ V(struct semaphore *sem)
 ////////////////////////////////////////////////////////////
 //
 // Lock.
-
+#if OPT_A2
 struct lock *
 lock_create(const char *name)
 {
@@ -320,4 +320,4 @@ cv_broadcast(struct cv *cv, struct lock *lock)
 
         wchan_wakeall(cv->cv_wchan);
 }
- /* OPT_A2 */
+#endif /* OPT_A2 */
