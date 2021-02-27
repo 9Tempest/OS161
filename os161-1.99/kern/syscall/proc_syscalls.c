@@ -107,7 +107,7 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   }
 
   //step2 create as and copy
-  struct addrspace* as;
+  struct addrspace* as = NULL;
   int error = as_copy(curproc_getas(), &as);
   if (error){
     proc_destroy(child);
@@ -138,7 +138,7 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   if (!tf){
     error = ENOMEM;
   } else {
-    *parent_tf = *tf;
+    memcpy((void *)parent_tf, (const void*) tf, sizeof(struct trapframe));
   }
   spinlock_release(&curproc->p_lock);
   if (error){
