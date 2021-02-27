@@ -114,15 +114,15 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
     *retval = (pid_t)-1;
     return ENOMEM;
   }
-  spinlock_acquire(&child->p_lock);
-  child->p_addrspace = as;
-  spinlock_release(&child->p_lock);
+  
 
   //step3 create child/parent relation
+  /*
   spinlock_acquire(&curproc->p_lock);
   child->parent = curproc;
   array_add(&curproc->children, &curproc, (unsigned*)&error);
   spinlock_release(&curproc->p_lock);
+  */
   if (error){
     *retval = (pid_t)-1;
     return error;
@@ -146,7 +146,7 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
     proc_destroy(child);
     return error;
   }
-  error = thread_fork(kstrdup("thread_c"), child, enter_forked_process, (void *)parent_tf, 1);
+  error = thread_fork(kstrdup("thread_c"), child, enter_forked_process, (void *)parent_tf, (unsigned long) as);
   if (error){
     *retval = (pid_t)-1;
     proc_destroy(child);

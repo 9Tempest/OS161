@@ -183,14 +183,18 @@ syscall(struct trapframe *tf)
  * Thus, you can trash it and do things another way if you prefer.
  */
 void
-enter_forked_process(void* tf_p, unsigned long argc)
+enter_forked_process(void* tf_p, unsigned long as)
 {
-	(void) argc;
-	as_activate();
+	
+	
 	struct trapframe tf_c = *((struct trapframe *)tf_p);
 	tf_c.tf_v0 = 0;
 	tf_c.tf_a3 = 0;
 	tf_c.tf_epc += 4;
+
+	curproc_setas((struct addrspace *) as);
+    as_activate();
+
 	kfree(tf_p);
 	mips_usermode(&tf_c);
 }
