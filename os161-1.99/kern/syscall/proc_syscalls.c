@@ -100,53 +100,60 @@ sys_waitpid(pid_t pid,
 
 int sys_fork(struct trapframe* tf, pid_t* retval){
   //step1 create child proc
-  int errno;
-    struct proc *proc_child;
-    struct addrspace *as_child;
-    struct trapframe *tf_cp;
+  struct proc* child = proc_create_runprogram(kstrdup("child"));
+  if (!child) {
+    *retval = (pid_t)-1;
+    return ENOMEM;
+  }
 
-    // create process structure for child process
-    proc_child = proc_create_runprogram(curproc->p_name);
-    if (proc_child == NULL) {
-        return(ENOMEM); 
-    }
+  //step2 create as and copy
+  struct addrspace* as = NULL;
+  int error = as_copy(curproc_getas(), &as);
+  if (error){
+    proc_destroy(child);
+    *retval = (pid_t)-1;
+    return ENOMEM;
+  }
+  
 
-    // create and copy address space
-    errno = as_copy(curproc_getas(), &as_child);
-    if (errno) {
-        //pid_fail();
-        proc_destroy(proc_child);
-        return(errno);  
-    }
-    
-    // allocate trapframe in heap
-    tf_cp = kmalloc(sizeof(struct trapframe));
-    if (tf_cp == NULL) {
-        as_destroy(as_child); 
-        //pid_fail();
-        proc_destroy(proc_child);
-        return(ENOMEM);
-    }
+  //step3 create child/parent relation
+  
+  spinlock_acquire(&curproc->p_lock);
+  child->parent = curproc;
+  array_add(&curproc->children, &curproc, (unsigned*)&error);
+  spinlock_release(&curproc->p_lock);
+  
+  if (error){
+    *retval = (pid_t)-1;
+    return error;
+  }
 
-    // copy trapframe into heap
-    *tf_cp = *tf;
+  //step4 create a thread
+  struct trapframe* parent_tf = kmalloc(sizeof(struct trapframe));
+  if (!parent_tf) {
+    *retval = (pid_t)-1;
+    return ENOMEM;
+  }
+  spinlock_acquire(&curproc->p_lock);
+  if (!tf){
+    error = ENOMEM;
+  } else {
+    *parent_tf = *tf;
+  }
+  spinlock_release(&curproc->p_lock);
+  if (error){
+    *retval = (pid_t)-1;
+    proc_destroy(child);
+    return error;
+  }
+  error = thread_fork(kstrdup("thread_c"), child, enter_forked_process, (void *)parent_tf, (unsigned long) as);
+  if (error){
+    *retval = (pid_t)-1;
+    proc_destroy(child);
+    return error;
+  }
 
-    // create thread for child process 
-    errno = thread_fork(curthread->t_name, 
-            proc_child, 
-            enter_forked_process, 
-            tf_cp, 
-            (unsigned long) as_child);
-    if (errno) {
-        kfree(tf_cp);
-        as_destroy(as_child); 
-        //pid_fail();
-        proc_destroy(proc_child);
-        return errno;
-    }
-
-    // set return value
-    *retval = proc_child->pid;
-
-    return(0);
+  //step5 return pid
+  *retval = child->pid;
+  return 0;
 }
