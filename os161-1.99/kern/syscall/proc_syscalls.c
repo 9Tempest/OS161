@@ -132,7 +132,7 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   struct trapframe* parent_tf = kmalloc(sizeof(struct trapframe));
   if (!parent_tf) {
     *retval = (pid_t)-1;
-    return -1;
+    return ENOMEM;
   }
   spinlock_acquire(&curproc->p_lock);
   if (!tf){
