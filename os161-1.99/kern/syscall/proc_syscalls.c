@@ -100,18 +100,19 @@ sys_waitpid(pid_t pid,
 
 int sys_fork(struct trapframe* tf, pid_t* retval){
   //step1 create child proc
-  struct proc* child = proc_create_runprogram("child");
+  struct proc* child = proc_create_runprogram(kstrdup("child"));
   if (!child) {
     *retval = (pid_t)-1;
-    return -1;
+    return ENOMEM;
   }
 
   //step2 create as and copy
   struct addrspace* as;
   int error = as_copy(curproc_getas(), &as);
   if (error){
+    proc_destroy(child);
     *retval = (pid_t)-1;
-    return -1;
+    return ENOMEM;
   }
   spinlock_acquire(&child->p_lock);
   child->p_addrspace = as;
@@ -135,18 +136,20 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   }
   spinlock_acquire(&curproc->p_lock);
   if (!tf){
-    error = 1;
+    error = ENOMEM;
   } else {
     *parent_tf = *tf;
   }
   spinlock_release(&curproc->p_lock);
   if (error){
     *retval = (pid_t)-1;
+    proc_destroy(child);
     return error;
   }
-  error = thread_fork("thread_c", child, enter_forked_process, (void *)parent_tf, 1);
+  error = thread_fork(kstrdup("thread_c"), child, enter_forked_process, (void *)parent_tf, 1);
   if (error){
     *retval = (pid_t)-1;
+    proc_destroy(child);
     return error;
   }
 
