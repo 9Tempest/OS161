@@ -197,11 +197,13 @@ proc_destroy(struct proc *proc)
 	}
 	V(proc_count_mutex);
 #endif // UW
+/*
 //#if OPT_A2
 	lock_destroy(proc->p_thread_lock);
 	array_destroy(&proc->children);
 	cv_destroy(proc->p_cv);
 //#endif
+*/
 
 }
 
