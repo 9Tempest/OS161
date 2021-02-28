@@ -114,6 +114,8 @@ proc_create(const char *name)
 	proc->p_cv = NULL;
 	proc->children = NULL;
 	proc->children_array_lock = NULL;
+	proc->parent_null_check_lock = NULL;
+	proc->is_alive = true;
 #endif
 
 	return proc;
@@ -175,14 +177,14 @@ proc_destroy(struct proc *proc)
 	  vfs_close(proc->console);
 	}
 #endif // UW
-/*
+
     for (unsigned int i = 0 ; i < array_num(proc->children); i++){
        struct proc *child = (struct proc *)array_get(proc->children, i);
        lock_acquire(child->parent_null_check_lock);
        child->parent = NULL;
        lock_release(child->parent_null_check_lock);
     }
-	*/
+	
     
 
 #if OPT_A2
@@ -192,7 +194,7 @@ proc_destroy(struct proc *proc)
 	array_setsize(proc->children, 0);
 	array_destroy(proc->children);
 	cv_destroy(proc->p_cv);
-	proc->is_alive = true;
+	proc->is_alive = false;
 	proc->exit_code = __WEXITED;
 #endif
 
@@ -435,3 +437,5 @@ void proc_set_dead(struct proc* proc, int exitcode){
 	cv_signal(proc->p_cv, proc->p_thread_lock);
 	lock_release(proc->p_thread_lock);
 }
+
+

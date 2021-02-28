@@ -19,6 +19,8 @@
 
 void sys__exit(int exitcode) {
 
+  DEBUG(DB_SYSCALL,"Syscall: _exit(%d)\n",exitcode);
+
   struct addrspace *as;
   struct proc *p = curproc;
   /* for now, just include this to keep the compiler from complaining about
@@ -41,7 +43,7 @@ void sys__exit(int exitcode) {
   }
   lock_release(p->parent_null_check_lock);
 
-  DEBUG(DB_SYSCALL,"Syscall: _exit(%d)\n",exitcode);
+  
 
   KASSERT(curproc->p_addrspace != NULL);
   as_deactivate();
@@ -96,7 +98,7 @@ sys_waitpid(pid_t pid,
   if (options != 0) {
     return(EINVAL);
   }
-  
+
   int exitstatus;
   int result;
 
@@ -169,7 +171,7 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   
   spinlock_acquire(&curproc->p_lock);
   child->parent = curproc;
-  array_add(curproc->children, &curproc, (unsigned*)&error);
+  array_add(curproc->children, (void *)&child, (unsigned*)&error);
   spinlock_release(&curproc->p_lock);
   
 
