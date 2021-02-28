@@ -75,8 +75,8 @@ struct proc {
 	
 	struct array children;
 	struct proc* parent;
-	//struct lock* p_thread_lock;
-	//struct cv* p_cv;
+	struct lock* p_thread_lock;
+	struct cv* p_cv;
 	
 
 //#endif
