@@ -108,14 +108,7 @@ proc_create(const char *name)
 #ifdef UW
 	proc->console = NULL;
 #endif // UW
-/*
-//#if OPT_A2
-	proc->p_thread_lock = lock_create("p_thread_lock");
-	proc->p_cv = cv_create("p_cv");
-	array_init(&proc->children);
-	proc->parent = NULL;
-//#endif
-*/
+
 
 	return proc;
 }
@@ -197,13 +190,13 @@ proc_destroy(struct proc *proc)
 	}
 	V(proc_count_mutex);
 #endif // UW
-/*
+
 //#if OPT_A2
-	lock_destroy(proc->p_thread_lock);
+	//lock_destroy(proc->p_thread_lock);
 	array_destroy(&proc->children);
-	cv_destroy(proc->p_cv);
+	//cv_destroy(proc->p_cv);
 //#endif
-*/
+
 
 }
 
@@ -299,6 +292,13 @@ proc_create_runprogram(const char *name)
 	proc->pid = pid_cnt;
 	pid_cnt++;
 	V(proc_count_mutex);
+	
+	//proc->p_thread_lock = lock_create("p_thread_lock");
+	//proc->p_cv = cv_create("p_cv");
+	array_init(&proc->children);
+	proc->parent = NULL;
+
+
 #endif
 
 	return proc;
