@@ -108,13 +108,14 @@ proc_create(const char *name)
 #ifdef UW
 	proc->console = NULL;
 #endif // UW
-
+/*
 //#if OPT_A2
 	proc->p_thread_lock = lock_create("p_thread_lock");
 	proc->p_cv = cv_create("p_cv");
 	array_init(&proc->children);
 	proc->parent = NULL;
 //#endif
+*/
 
 	return proc;
 }

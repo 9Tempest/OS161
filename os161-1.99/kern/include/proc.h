@@ -72,10 +72,12 @@ struct proc {
 //#if OPT_A2
 
 	pid_t pid;
+	/*
 	struct array children;
 	struct proc* parent;
 	struct lock* p_thread_lock;
 	struct cv* p_cv;
+	*/
 
 //#endif
 

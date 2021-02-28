@@ -119,12 +119,13 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   spinlock_release(&child->p_lock);
 
   //step3 create child/parent relation
-  
+  /*
   spinlock_acquire(&curproc->p_lock);
   child->parent = curproc;
   array_add(&curproc->children, &curproc, (unsigned*)&error);
   spinlock_release(&curproc->p_lock);
-  
+  */
+ 
   if (error){
     *retval = (pid_t)-1;
     return error;
