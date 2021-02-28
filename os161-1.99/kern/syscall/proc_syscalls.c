@@ -38,7 +38,7 @@ void sys__exit(int exitcode) {
   lock_release(p->children_array_lock);
   
   lock_acquire(p->parent_null_check_lock);
-  if (!p->parent || proc_check_alive(p->parent)){
+  if (!p->parent || !proc_check_alive(p->parent)){
     can_delete = true;
   }
   lock_release(p->parent_null_check_lock);
