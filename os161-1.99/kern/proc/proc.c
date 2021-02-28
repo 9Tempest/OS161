@@ -51,7 +51,7 @@
 #include <synch.h>
 #include <kern/fcntl.h>  
 #include "opt-A2.h"
-
+#include <wait.h>
 /*
  * The process for the kernel; this holds all the kernel-only threads.
  */
@@ -109,11 +109,12 @@ proc_create(const char *name)
 	proc->console = NULL;
 #endif // UW
 
-//#if OPT_A2
+#if OPT_A2
 	proc->p_thread_lock = NULL;
 	proc->p_cv = NULL;
 	proc->children = NULL;
-//#endif
+	proc->children_array_lock = NULL;
+#endif
 
 	return proc;
 }
@@ -174,14 +175,24 @@ proc_destroy(struct proc *proc)
 	  vfs_close(proc->console);
 	}
 #endif // UW
+    for (unsigned int i = 0 ; i < array_num(proc->children); i++){
+       struct proc *child = (struct proc *)array_get(proc->children, i);
+       lock_acquire(child->parent_null_check_lock);
+       child->parent = NULL;
+       lock_release(child->parent_null_check_lock);
+    }
+    
 
-	//#if OPT_A2
+#if OPT_A2
 	lock_destroy(proc->p_thread_lock);
+	lock_destroy(proc->children_array_lock);
+	lock_destroy(proc->parent_null_check_lock);
 	array_setsize(proc->children, 0);
 	array_destroy(proc->children);
 	cv_destroy(proc->p_cv);
 	proc->is_alive = true;
-	//#endif
+	proc->exit_code = _WEXITED;
+#endif
 
 	threadarray_cleanup(&proc->p_threads);
 	spinlock_cleanup(&proc->p_lock);
@@ -301,8 +312,9 @@ proc_create_runprogram(const char *name)
 	proc->pid = pid_cnt;
 	pid_cnt++;
 	V(proc_count_mutex);
-	
+	proc->children_array_lock = lock_create("children_array_lock");
 	proc->p_thread_lock = lock_create("p_thread_lock");
+	proc->parent_null_check_lock = lock_create("parent");
 	proc->p_cv = cv_create("p_cv");
 	proc->children = array_create();
 	proc->parent = NULL;
@@ -402,4 +414,22 @@ curproc_setas(struct addrspace *newas)
 	proc->p_addrspace = newas;
 	spinlock_release(&proc->p_lock);
 	return oldas;
+}
+
+bool proc_check_alive(struct proc* proc){
+	KASSERT(proc);
+	bool ret = false;
+	lock_acquire(proc->p_thread_lock);
+	ret = proc->is_alive;
+	lock_release(proc->p_thread_lock);
+	return ret;
+}
+
+void proc_set_dead(struct proc* proc, int exitcode){
+	KASSERT(proc);
+	lock_acquire(proc->p_thread_lock);
+	proc->is_alive = false;
+	proc->exit_code = exitcode;
+	cv_signal(proc->p_cv, proc->p_thread_lock);
+	lock_release(proc->p_thread_lock);
 }
