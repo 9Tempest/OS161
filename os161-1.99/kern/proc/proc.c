@@ -180,6 +180,7 @@ proc_destroy(struct proc *proc)
 	array_setsize(proc->children, 0);
 	array_destroy(proc->children);
 	cv_destroy(proc->p_cv);
+	proc->is_alive = true;
 	//#endif
 
 	threadarray_cleanup(&proc->p_threads);

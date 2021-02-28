@@ -77,6 +77,7 @@ struct proc {
 	struct proc* parent;
 	struct lock* p_thread_lock;
 	struct cv* p_cv;
+	bool is_alive;
 	
 
 //#endif
