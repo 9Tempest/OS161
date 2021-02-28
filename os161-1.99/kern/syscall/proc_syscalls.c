@@ -171,7 +171,7 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   
   spinlock_acquire(&curproc->p_lock);
   child->parent = curproc;
-  array_add(curproc->children, (void *)&child, (unsigned*)&error);
+  array_add(curproc->children, (void *)child, (unsigned*)&error);
   spinlock_release(&curproc->p_lock);
   
 
