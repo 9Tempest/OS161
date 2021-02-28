@@ -302,6 +302,21 @@ proc_create_runprogram(const char *name)
 	spinlock_release(&curproc->p_lock);
 #endif // UW
 
+#if OPT_A2
+	P(proc_count_mutex); 
+	proc->pid = pid_cnt;
+	pid_cnt++;
+	V(proc_count_mutex);
+	//proc->children_array_lock = lock_create("children_array_lock");
+	proc->p_thread_lock = lock_create("p_thread_lock");
+	proc->parent_null_check_lock = lock_create("parent");
+	proc->p_cv = cv_create("p_cv");
+	proc->children = array_create();
+	proc->parent = NULL;
+
+
+#endif
+
 #ifdef UW
 	/* increment the count of processes */
         /* we are assuming that all procs, including those created by fork(),
@@ -311,20 +326,7 @@ proc_create_runprogram(const char *name)
 	V(proc_count_mutex);
 #endif // UW
 
-#if OPT_A2
-	P(proc_count_mutex); 
-	proc->pid = pid_cnt;
-	pid_cnt++;
-	V(proc_count_mutex);
-	proc->children_array_lock = lock_create("children_array_lock");
-	proc->p_thread_lock = lock_create("p_thread_lock");
-	proc->parent_null_check_lock = lock_create("parent");
-	proc->p_cv = cv_create("p_cv");
-	proc->children = array_create();
-	proc->parent = NULL;
 
-
-#endif
 
 	return proc;
 }

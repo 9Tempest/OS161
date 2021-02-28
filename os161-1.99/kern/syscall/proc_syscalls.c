@@ -26,7 +26,7 @@ void sys__exit(int exitcode) {
   /* for now, just include this to keep the compiler from complaining about
      an unused variable */
   bool can_delete = false;
-  lock_acquire(p->children_array_lock);
+  //lock_acquire(p->children_array_lock);
   for (unsigned int i = 0 ; i < array_num(p->children); i++){
     struct proc *child = (struct proc *)array_get(p->children, i);
     if (!proc_check_alive(child)){
@@ -35,7 +35,7 @@ void sys__exit(int exitcode) {
       proc_destroy(child);
     }
   }
-  lock_release(p->children_array_lock);
+  //lock_release(p->children_array_lock);
   
   lock_acquire(p->parent_null_check_lock);
   if (!p->parent || !proc_check_alive(p->parent)){
@@ -103,7 +103,7 @@ sys_waitpid(pid_t pid,
   int result;
 
   bool pid_is_children = false;
-  lock_acquire(curproc->children_array_lock);
+  //lock_acquire(curproc->children_array_lock);
   for (unsigned int i = 0; i < array_num(curproc->children); i++){
     struct proc* child = array_get(curproc->children, i);
     if (child->pid == pid){
@@ -117,7 +117,7 @@ sys_waitpid(pid_t pid,
       proc_destroy(child);
     }
   }
-  lock_release(curproc->children_array_lock);
+  //lock_release(curproc->children_array_lock);
 
   if (!pid_is_children){
     *retval=-1;
@@ -149,7 +149,7 @@ sys_waitpid(pid_t pid,
 #if OPT_A2
 int sys_fork(struct trapframe* tf, pid_t* retval){
   //step1 create child proc
-  struct proc* child = proc_create_runprogram(kstrdup("child"));
+  struct proc* child = proc_create_runprogram("child");
   if (!child) {
     *retval = (pid_t)-1;
     return ENOMEM;
@@ -166,19 +166,6 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   spinlock_acquire(&child->p_lock);
   child->p_addrspace = as;
   spinlock_release(&child->p_lock);
-
-  //step3 create child/parent relation
-  
-  spinlock_acquire(&curproc->p_lock);
-  child->parent = curproc;
-  array_add(curproc->children, (void *)child, (unsigned*)&error);
-  spinlock_release(&curproc->p_lock);
-  
-
-  if (error){
-    *retval = (pid_t)-1;
-    return error;
-  }
 
   //step4 create a thread
   struct trapframe* parent_tf = kmalloc(sizeof(struct trapframe));
@@ -198,7 +185,19 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
     proc_destroy(child);
     return error;
   }
-  error = thread_fork(kstrdup("thread_c"), child, enter_forked_process, (void *)parent_tf, (unsigned long) as);
+  //step3 create child/parent relation
+  spinlock_acquire(&curproc->p_lock);
+  child->parent = curproc;
+  array_add(curproc->children, (void *)child, (unsigned*)&error);
+  spinlock_release(&curproc->p_lock);
+  
+
+  if (error){
+    *retval = (pid_t)-1;
+    return error;
+  }
+
+  error = thread_fork("thread_c", child, enter_forked_process, (void *)parent_tf, (unsigned long) as);
   if (error){
     *retval = (pid_t)-1;
     proc_destroy(child);
