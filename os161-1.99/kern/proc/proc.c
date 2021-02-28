@@ -193,7 +193,9 @@ proc_destroy(struct proc *proc)
 
 //#if OPT_A2
 	lock_destroy(proc->p_thread_lock);
-	array_cleanup(&proc->children);
+	for (int i = 0; i < proc->children.num; i++){
+		array_remove(&proc->children, i);
+	}
 	array_destroy(&proc->children);
 	cv_destroy(proc->p_cv);
 //#endif
