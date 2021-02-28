@@ -109,6 +109,10 @@ proc_create(const char *name)
 	proc->console = NULL;
 #endif // UW
 
+//#if OPT_A2
+	proc->p_thread_lock = NULL;
+	proc->p_cv = NULL;
+//#endif
 
 	return proc;
 }
@@ -170,6 +174,13 @@ proc_destroy(struct proc *proc)
 	}
 #endif // UW
 
+	//#if OPT_A2
+	lock_destroy(proc->p_thread_lock);
+	array_setsize(&proc->children, 0);
+	array_destroy(&proc->children);
+	cv_destroy(proc->p_cv);
+	//#endif
+
 	threadarray_cleanup(&proc->p_threads);
 	spinlock_cleanup(&proc->p_lock);
 
@@ -191,14 +202,7 @@ proc_destroy(struct proc *proc)
 	V(proc_count_mutex);
 #endif // UW
 
-//#if OPT_A2
-	lock_destroy(proc->p_thread_lock);
-	for (int i = 0; i < proc->children.num; i++){
-		array_remove(&proc->children, i);
-	}
-	array_destroy(&proc->children);
-	cv_destroy(proc->p_cv);
-//#endif
+
 
 
 }
