@@ -187,7 +187,7 @@ void
 enter_forked_process(void* tf_p, unsigned long as)
 {
 	
-	void* (as);
+	(void) as;
 	struct trapframe tf_c = *((struct trapframe *)tf_p);
 	tf_c.tf_v0 = 0;
 	tf_c.tf_a3 = 0;
