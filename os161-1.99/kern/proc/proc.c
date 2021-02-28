@@ -51,7 +51,7 @@
 #include <synch.h>
 #include <kern/fcntl.h>  
 #include "opt-A2.h"
-#include <wait.h>
+#include <kern/wait.h>
 /*
  * The process for the kernel; this holds all the kernel-only threads.
  */
@@ -175,12 +175,14 @@ proc_destroy(struct proc *proc)
 	  vfs_close(proc->console);
 	}
 #endif // UW
+/*
     for (unsigned int i = 0 ; i < array_num(proc->children); i++){
        struct proc *child = (struct proc *)array_get(proc->children, i);
        lock_acquire(child->parent_null_check_lock);
        child->parent = NULL;
        lock_release(child->parent_null_check_lock);
     }
+	*/
     
 
 #if OPT_A2
@@ -191,7 +193,7 @@ proc_destroy(struct proc *proc)
 	array_destroy(proc->children);
 	cv_destroy(proc->p_cv);
 	proc->is_alive = true;
-	proc->exit_code = _WEXITED;
+	proc->exit_code = __WEXITED;
 #endif
 
 	threadarray_cleanup(&proc->p_threads);
