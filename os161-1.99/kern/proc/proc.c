@@ -112,6 +112,7 @@ proc_create(const char *name)
 //#if OPT_A2
 	proc->p_thread_lock = NULL;
 	proc->p_cv = NULL;
+	proc->children = NULL;
 //#endif
 
 	return proc;
@@ -176,8 +177,8 @@ proc_destroy(struct proc *proc)
 
 	//#if OPT_A2
 	lock_destroy(proc->p_thread_lock);
-	array_setsize(&proc->children, 0);
-	array_destroy(&proc->children);
+	array_setsize(proc->children, 0);
+	array_destroy(proc->children);
 	cv_destroy(proc->p_cv);
 	//#endif
 
@@ -302,7 +303,7 @@ proc_create_runprogram(const char *name)
 	
 	proc->p_thread_lock = lock_create("p_thread_lock");
 	proc->p_cv = cv_create("p_cv");
-	array_init(&proc->children);
+	proc->children = array_create();
 	proc->parent = NULL;
 
 
