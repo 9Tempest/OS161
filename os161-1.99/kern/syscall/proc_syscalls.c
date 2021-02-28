@@ -112,9 +112,11 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   if (error){
     proc_destroy(child);
     *retval = (pid_t)-1;
-    return ENOMEM;
+    return error;
   }
-  
+  spinlock_acquire(&child->p_lock);
+  child->p_addrspace = as;
+  spinlock_release(&child->p_lock);
 
   //step3 create child/parent relation
   
