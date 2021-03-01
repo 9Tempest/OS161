@@ -75,9 +75,7 @@ struct proc {
 	
 	struct array* children;
 	struct proc* parent;
-	struct lock* children_array_lock;
 	struct lock* p_thread_lock;
-	struct lock* parent_null_check_lock;
 	struct cv* p_cv;
 	bool is_alive;
 	int exit_code;

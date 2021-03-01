@@ -36,12 +36,11 @@ void sys__exit(int exitcode) {
     }
   }
   //lock_release(p->children_array_lock);
-  
-  lock_acquire(p->parent_null_check_lock);
-  if (!p->parent || !proc_check_alive(p->parent)){
+  lock_acquire(p->p_thread_lock);
+  if (!p->parent || !p->parent->is_alive){
     can_delete = true;
   }
-  lock_release(p->parent_null_check_lock);
+  lock_release(p->p_thread_lock);
 
   
 
@@ -114,8 +113,8 @@ sys_waitpid(pid_t pid,
       }
       exitstatus = _MKWAIT_EXIT(child->exit_code);
       lock_release(child->p_thread_lock);
-      proc_destroy(child);
-      array_remove(curproc->children, i);
+      //proc_destroy(child);
+      //array_remove(curproc->children, i);
       break;
     }
   }

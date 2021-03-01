@@ -113,8 +113,6 @@ proc_create(const char *name)
 	proc->p_thread_lock = NULL;
 	proc->p_cv = NULL;
 	proc->children = NULL;
-	proc->children_array_lock = NULL;
-	proc->parent_null_check_lock = NULL;
 	proc->is_alive = true;
 #endif
 
@@ -180,17 +178,15 @@ proc_destroy(struct proc *proc)
 
     for (unsigned int i = 0 ; i < array_num(proc->children); i++){
        struct proc *child = (struct proc *)array_get(proc->children, i);
-       lock_acquire(child->parent_null_check_lock);
+       lock_acquire(child->p_thread_lock);
        child->parent = NULL;
-       lock_release(child->parent_null_check_lock);
+       lock_release(child->p_thread_lock);
     }
 	
     
 
 #if OPT_A2
 	lock_destroy(proc->p_thread_lock);
-	lock_destroy(proc->children_array_lock);
-	lock_destroy(proc->parent_null_check_lock);
 	array_setsize(proc->children, 0);
 	array_destroy(proc->children);
 	cv_destroy(proc->p_cv);
@@ -307,9 +303,7 @@ proc_create_runprogram(const char *name)
 	proc->pid = pid_cnt;
 	pid_cnt++;
 	V(proc_count_mutex);
-	//proc->children_array_lock = lock_create("children_array_lock");
 	proc->p_thread_lock = lock_create("p_thread_lock");
-	proc->parent_null_check_lock = lock_create("parent");
 	proc->p_cv = cv_create("p_cv");
 	proc->children = array_create();
 	proc->parent = NULL;
