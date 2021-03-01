@@ -30,9 +30,9 @@ void sys__exit(int exitcode) {
   for (unsigned int i = 0 ; i < array_num(p->children); i++){
     struct proc *child = (struct proc *)array_get(p->children, i);
     if (!proc_check_alive(child)){
+      proc_destroy(child);
       array_remove(p->children, i);
       i--;
-      proc_destroy(child);
     }
   }
   //lock_release(p->children_array_lock);
@@ -115,6 +115,8 @@ sys_waitpid(pid_t pid,
       exitstatus = _MKWAIT_EXIT(child->exit_code);
       lock_release(child->p_thread_lock);
       proc_destroy(child);
+      array_remove(curproc->children, i);
+      break;
     }
   }
   //lock_release(curproc->children_array_lock);
