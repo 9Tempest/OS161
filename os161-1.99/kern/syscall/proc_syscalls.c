@@ -189,7 +189,8 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   //step3 create child/parent relation
   spinlock_acquire(&curproc->p_lock);
   child->parent = curproc;
-  array_add(curproc->children, (void *)child, (unsigned*)&error);
+  int idx;
+  error = array_add(curproc->children, (void *)child, (unsigned*)&idx);
   spinlock_release(&curproc->p_lock);
   
 
@@ -198,7 +199,7 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
     return error;
   }
 
-  error = thread_fork("thread_c", child, enter_forked_process, (void *)parent_tf, (unsigned long) as);
+  error = thread_fork("thread_c", child, enter_forked_process, (void *)parent_tf, 0);
   if (error){
     *retval = (pid_t)-1;
     proc_destroy(child);
