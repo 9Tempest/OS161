@@ -69,7 +69,7 @@ struct proc {
   struct vnode *console;                /* a vnode for the console device */
 #endif
 
-//#if OPT_A2
+#if OPT_A2
 
 	pid_t pid;
 	
@@ -81,7 +81,7 @@ struct proc {
 	int exit_code;
 	
 
-//#endif
+#endif
 
 
 

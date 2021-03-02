@@ -110,10 +110,30 @@ proc_create(const char *name)
 #endif // UW
 
 #if OPT_A2
-	proc->p_thread_lock = NULL;
-	proc->p_cv = NULL;
-	proc->children = NULL;
 	proc->is_alive = true;
+	proc->p_thread_lock = lock_create("p_thread_lock");
+	//error checking part
+	if (proc->p_thread_lock == NULL){
+		kfree(proc->name);
+		kfree(proc);
+		return NULL;
+	}
+	proc->p_cv = cv_create("p_cv");
+	if (proc->p_cv == NULL){
+		kfree(proc->name);
+		lock_destroy(proc->p_thread_lock);
+		kfree(proc);
+		return NULL;
+	}
+	proc->children = array_create();
+	if (proc->children == NULL){
+		kfree(proc->name);
+		lock_destroy(proc->p_thread_lock);
+		cv_destroy(proc->p_cv);
+		kfree(proc);
+		return NULL;
+	}
+	proc->parent = NULL;
 #endif
 
 	return proc;
@@ -299,16 +319,12 @@ proc_create_runprogram(const char *name)
 #endif // UW
 
 #if OPT_A2
+	//assign pid
 	P(proc_count_mutex); 
 	proc->pid = pid_cnt;
 	pid_cnt++;
 	V(proc_count_mutex);
-	proc->p_thread_lock = lock_create("p_thread_lock");
-	proc->p_cv = cv_create("p_cv");
-	proc->children = array_create();
-	proc->parent = NULL;
-
-
+	
 #endif
 
 #ifdef UW

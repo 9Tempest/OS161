@@ -13,7 +13,7 @@
 #include "opt-A2.h"
 #include <synch.h>
 
-
+#if OPT_A2
   /* this implementation of sys__exit does not do anything with the exit code */
   /* this needs to be fixed to get exit() and waitpid() working properly */
 
@@ -23,10 +23,9 @@ void sys__exit(int exitcode) {
 
   struct addrspace *as;
   struct proc *p = curproc;
-  /* for now, just include this to keep the compiler from complaining about
-     an unused variable */
+  
   bool can_delete = false;
-  //lock_acquire(p->children_array_lock);
+  
   for (unsigned int i = 0 ; i < array_num(p->children); i++){
     struct proc *child = (struct proc *)array_get(p->children, i);
     if (!proc_check_alive(child)){
@@ -35,7 +34,8 @@ void sys__exit(int exitcode) {
       i--;
     }
   }
-  //lock_release(p->children_array_lock);
+
+  // a proc can only delete itself when its parent is NULL or dead
   lock_acquire(p->p_thread_lock);
   if (!p->parent || !p->parent->is_alive){
     can_delete = true;
@@ -63,7 +63,6 @@ void sys__exit(int exitcode) {
   /* if this is the last user process in the system, proc_destroy()
      will wake up the kernel menu thread */
   if (can_delete){
-    
     proc_destroy(p);
   } else {
     proc_set_dead(p, exitcode);
@@ -102,37 +101,28 @@ sys_waitpid(pid_t pid,
   int result;
 
   bool pid_is_children = false;
-  //lock_acquire(curproc->children_array_lock);
+  //check children's pid
   for (unsigned int i = 0; i < array_num(curproc->children); i++){
     struct proc* child = array_get(curproc->children, i);
     if (child->pid == pid){
       pid_is_children = true;
       lock_acquire(child->p_thread_lock);
+      //wait for the child to exit
       while (child->is_alive){
         cv_wait(child->p_cv, child->p_thread_lock);
       }
       exitstatus = _MKWAIT_EXIT(child->exit_code);
       lock_release(child->p_thread_lock);
-      //proc_destroy(child);
-      //array_remove(curproc->children, i);
       break;
     }
   }
-  //lock_release(curproc->children_array_lock);
-
+  
+  //if not found, return err
   if (!pid_is_children){
     *retval=-1;
     return (ESRCH);
   }
 
-  /* this is just a stub implementation that always reports an
-     exit status of 0, regardless of the actual exit status of
-     the specified process.   
-     In fact, this will return 0 even if the specified process
-     is still running, and even if it never existed in the first place.
-
-     Fix this!
-  */
 
 
   
@@ -147,7 +137,7 @@ sys_waitpid(pid_t pid,
 }
 
 
-#if OPT_A2
+
 int sys_fork(struct trapframe* tf, pid_t* retval){
   //step1 create child proc
   struct proc* child = proc_create_runprogram("child");
@@ -210,4 +200,6 @@ int sys_fork(struct trapframe* tf, pid_t* retval){
   *retval = child->pid;
   return 0;
 }
+
+
 #endif
