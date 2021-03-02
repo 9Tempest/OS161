@@ -114,20 +114,20 @@ proc_create(const char *name)
 	proc->p_thread_lock = lock_create("p_thread_lock");
 	//error checking part
 	if (proc->p_thread_lock == NULL){
-		kfree(proc->name);
+		kfree(proc->p_name);
 		kfree(proc);
 		return NULL;
 	}
 	proc->p_cv = cv_create("p_cv");
 	if (proc->p_cv == NULL){
-		kfree(proc->name);
+		kfree(proc->p_name);
 		lock_destroy(proc->p_thread_lock);
 		kfree(proc);
 		return NULL;
 	}
 	proc->children = array_create();
 	if (proc->children == NULL){
-		kfree(proc->name);
+		kfree(proc->p_name);
 		lock_destroy(proc->p_thread_lock);
 		cv_destroy(proc->p_cv);
 		kfree(proc);
