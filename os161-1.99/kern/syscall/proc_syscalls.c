@@ -30,70 +30,73 @@ int sys_execv(const char *program, char **args){
 	struct vnode *v;
 	vaddr_t entrypoint, stackptr;
 	int result;
-  int argc = 0;
-
-  /* copy the number of args /args*/
-  char *curr = *args;
-  while(curr){
-    argc++;
-    curr = args[argc];
-  }
-  char **kargs = kmalloc((argc+1) * sizeof(char*));
-  for (int i = 0; i <= argc; i++){
-    if (i == argc){
-      kargs[i] = NULL;
-    } else {
-      int karg_size = strlen(args[i])+1;
-      kargs[i] = kmalloc(karg_size * sizeof(char));
-      result = copyin((const_userptr_t)args[i], kargs[i], karg_size);
-    }
-  }
+  // copy over program name into kernel space
+  size_t prog_size = (strlen(program_name) + 1);
+  char * kprogram_name = kmalloc(prog_size * sizeof(char));
+  
+  result = copyin((const_userptr_t) program_name, (void *) kprogram_name, prog_size);
   if (result){
-    kargs_cleanup(kargs, argc);
-  }
-
-
-  /* copy program name */
-  int prog_name_size = strlen(program) + 1;
-  char* prog_name = kmalloc(prog_name_size * sizeof(char));
-  result = copyin((const_userptr_t)program, prog_name, prog_name_size);
-  if (result) {
-    kargs_cleanup(kargs, argc);
-    kfree(prog_name);
+    kfree(kprogram_name);
     return result;
   }
 
+
+  // count number of args and copy into kernel
+  int argc = 0;
+  for (int i = 0; args[i] != NULL; i++) {
+    argc++;
+  }
+
+  // copy program args into kernel
+  size_t args_array_size = (argc + 1);
+  char ** kargs = kmalloc(args_array_size *  sizeof(char *));
+  
+
+  for (int i = 0; i <= argc; i++) {
+    if (i == argc) {
+      kargs[i] = NULL;
+    }
+    else {
+      size_t arg_size = (strlen(args[i]) + 1);
+      kargs[i] = kmalloc(arg_size * sizeof(char));
+      KASSERT(kargs[i] != NULL);
+      result = copyin((const_userptr_t) args[i], (void *) kargs[i], arg_size);
+      KASSERT(result == 0);
+    }
+  }
+
+
 	/* Open the file. */
-	result = vfs_open(prog_name, O_RDONLY, 0, &v);
+	result = vfs_open(program_name_kernel, O_RDONLY, 0, &v);
 	if (result) {
-    kfree(prog_name);
+    kfree(program_name);
     kargs_cleanup(kargs, argc);
 		return result;
 	}
 
 	/* We should be a new process. */
-	KASSERT(curproc_getas() == NULL);
+	/* KASSERT(curproc_getas() == NULL); */
 
 	/* Create a new address space. */
 	as = as_create();
 	if (as ==NULL) {
 		vfs_close(v);
-    kfree(prog_name);
+    kfree(program_name);
     kargs_cleanup(kargs, argc);
 		return ENOMEM;
 	}
 
 	/* Switch to it and activate it. */
-	curproc_setas(as);
+	struct addrspace * as_old = curproc_setas(as);
 	as_activate();
 
 	/* Load the executable. */
 	result = load_elf(v, &entrypoint);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
-		vfs_close(v);
-    kfree(prog_name);
+    kfree(program_name);
     kargs_cleanup(kargs, argc);
+		vfs_close(v);
 		return result;
 	}
 
@@ -104,22 +107,51 @@ int sys_execv(const char *program, char **args){
 	result = as_define_stack(as, &stackptr);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
-    kfree(prog_name);
+    kfree(program_name);
     kargs_cleanup(kargs, argc);
 		return result;
 	}
 
+  //HARD PART: COPY ARGS TO USER STACK
+  vaddr_t temp_stack_ptr = stackptr;
+  vaddr_t *stack_args = kmalloc((argc + 1) * sizeof(vaddr_t));
+
+  for (int i = argc; i >= 0; i--) {
+    if (i == argc) {
+      stack_args[i] = (vaddr_t) NULL;
+      continue;
+    }
+    size_t arg_length = ROUNDUP(strlen(kargs[i]) + 1, 4);
+    size_t arg_size = arg_length * sizeof(char);
+    temp_stack_ptr -= arg_size;
+    int err = copyout((void *) kargs[i], (userptr_t) temp_stack_ptr, arg_length);
+    KASSERT(err == 0);
+    stack_args[i] = temp_stack_ptr;
+  }
+
+  for (int i = argc; i >= 0; i--) {
+    size_t str_pointer_size = sizeof(vaddr_t);
+    temp_stack_ptr -= str_pointer_size;
+    int err = copyout((void *) &stack_args[i], (userptr_t) temp_stack_ptr, str_pointer_size);
+    KASSERT(err == 0);
+  }
+  // HARD PART: COPY ARGS TO USER STACK
+
+  as_destroy(as_old);
+  kfree(program_name_kernel);
+  // might want to free kargs
+  for (int i = 0; i <= argc; i++) {
+    kfree(kargs[i]);
+  }
+  kfree(kargs);
+
 	/* Warp to user mode. */
-	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
-			  stackptr, entrypoint);
-	
+	enter_new_process(argc /*argc*/, (userptr_t) temp_stack_ptr /*userspace addr of argv*/,
+			  ROUNDUP(temp_stack_ptr, 8), entrypoint);
+
 	/* enter_new_process does not return. */
 	panic("enter_new_process returned\n");
-  kfree(prog_name);
-  kargs_cleanup(kargs, argc);
-	return EINVAL;
-
-  return (0);
+  return EINVAL;
 }
 
 #if OPT_A2
