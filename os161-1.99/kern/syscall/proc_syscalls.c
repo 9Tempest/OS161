@@ -31,12 +31,12 @@ int sys_execv(const char *program, char **args){
 	vaddr_t entrypoint, stackptr;
 	int result;
   // copy over program name into kernel space
-  size_t prog_size = (strlen(program_name) + 1);
-  char * kprogram_name = kmalloc(prog_size * sizeof(char));
+  size_t prog_size = (strlen(program) + 1);
+  char * kprogram = kmalloc(prog_size * sizeof(char));
   
-  result = copyin((const_userptr_t) program_name, (void *) kprogram_name, prog_size);
+  result = copyin((const_userptr_t) program, (void *) kprogram, prog_size);
   if (result){
-    kfree(kprogram_name);
+    kfree(kprogram);
     return result;
   }
 
@@ -67,9 +67,9 @@ int sys_execv(const char *program, char **args){
 
 
 	/* Open the file. */
-	result = vfs_open(program_name_kernel, O_RDONLY, 0, &v);
+	result = vfs_open(kprogram, O_RDONLY, 0, &v);
 	if (result) {
-    kfree(program_name);
+    kfree(program);
     kargs_cleanup(kargs, argc);
 		return result;
 	}
@@ -81,7 +81,7 @@ int sys_execv(const char *program, char **args){
 	as = as_create();
 	if (as ==NULL) {
 		vfs_close(v);
-    kfree(program_name);
+    kfree(program);
     kargs_cleanup(kargs, argc);
 		return ENOMEM;
 	}
@@ -94,7 +94,7 @@ int sys_execv(const char *program, char **args){
 	result = load_elf(v, &entrypoint);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
-    kfree(program_name);
+    kfree(program);
     kargs_cleanup(kargs, argc);
 		vfs_close(v);
 		return result;
@@ -107,7 +107,7 @@ int sys_execv(const char *program, char **args){
 	result = as_define_stack(as, &stackptr);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
-    kfree(program_name);
+    kfree(program);
     kargs_cleanup(kargs, argc);
 		return result;
 	}
@@ -138,7 +138,7 @@ int sys_execv(const char *program, char **args){
   // HARD PART: COPY ARGS TO USER STACK
 
   as_destroy(as_old);
-  kfree(program_name_kernel);
+  kfree(program_kernel);
   // might want to free kargs
   for (int i = 0; i <= argc; i++) {
     kfree(kargs[i]);
