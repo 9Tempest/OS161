@@ -128,7 +128,7 @@ int sys_execv(const char *program, char **args){
   as_destroy(old_as);
 
 	/* Warp to user mode. */
-	enter_new_process(argc /*argc*/, stackptr /*userspace addr of argv*/,
+	enter_new_process(argc /*argc*/, (userptr_t)stackptr /*userspace addr of argv*/,
 			  ROUNDUP(stackptr, 8), entrypoint);
 	
 	/* enter_new_process does not return. */
