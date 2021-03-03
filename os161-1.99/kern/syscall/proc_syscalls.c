@@ -56,7 +56,7 @@ int sys_execv(const char *program, char **args){
   /* copy program name */
   int prog_name_size = strlen(program) + 1;
   char* prog_name = kmalloc(prog_name_size * sizeof(char));
-  result = copyins((const_userptr_t)program, prog_name, prog_name_size);
+  result = copyin((const_userptr_t)program, prog_name, prog_name_size);
   if (result) {
     kargs_cleanup(kargs, argc);
     kfree(prog_name);
