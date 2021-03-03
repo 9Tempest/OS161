@@ -62,6 +62,7 @@ int sys_execv(const char *program, char **args){
     kfree(prog_name);
     return result;
   }
+  kprintf("program name is %s", prog_name);
 
 	/* Open the file. */
 	result = vfs_open(prog_name, O_RDONLY, 0, &v);
