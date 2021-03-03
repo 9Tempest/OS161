@@ -196,16 +196,14 @@ proc_destroy(struct proc *proc)
 	}
 #endif // UW
 
+#if OPT_A2
     for (unsigned int i = 0 ; i < array_num(proc->children); i++){
        struct proc *child = (struct proc *)array_get(proc->children, i);
        lock_acquire(child->p_thread_lock);
        child->parent = NULL;
        lock_release(child->p_thread_lock);
     }
-	
-    
 
-#if OPT_A2
 	lock_destroy(proc->p_thread_lock);
 	array_setsize(proc->children, 0);
 	array_destroy(proc->children);
@@ -432,6 +430,7 @@ curproc_setas(struct addrspace *newas)
 	return oldas;
 }
 
+#if OPT_A2
 bool proc_check_alive(struct proc* proc){
 	KASSERT(proc);
 	bool ret = false;
@@ -449,5 +448,5 @@ void proc_set_dead(struct proc* proc, int exitcode){
 	cv_signal(proc->p_cv, proc->p_thread_lock);
 	lock_release(proc->p_thread_lock);
 }
-
+#endif
 
