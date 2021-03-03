@@ -32,36 +32,51 @@ int sys_execv(const char *program, char **args){
 	int result;
   int argc = 0;
 
-  /* copy the number of args /args*/
+  /* copy the number of args */
   char *curr = *args;
   while(curr){
     argc++;
     curr = args[argc];
   }
   char **kargs = kmalloc((argc+1) * sizeof(char*));
+  if (!kargs){
+    return ENOMEM;
+  }
+
   for (int i = 0; i <= argc; i++){
     if (i == argc){
       kargs[i] = NULL;
     } else {
       int karg_size = strlen(args[i])+1;
       kargs[i] = kmalloc(karg_size * sizeof(char));
+      if (!kargs[i]){
+        kargs_cleanup(kargs, i);
+        return ENOMEM;
+      }
       result = copyin((const_userptr_t)args[i], kargs[i], karg_size);
+      if (result){
+        kargs_cleanup(kargs, i+1);
+        return result;
+      }
+      //kprintf("arg %d is %s", i, kargs[i]);
     }
-  }
-  if (result){
-    kargs_cleanup(kargs, argc);
   }
 
 
   /* copy program name */
   int prog_name_size = strlen(program) + 1;
   char* prog_name = kmalloc(prog_name_size * sizeof(char));
+  if (!prog_name) {
+    kargs_cleanup(kargs, argc);
+    return ENOMEM;
+  }
   result = copyin((const_userptr_t)program, prog_name, prog_name_size);
   if (result) {
     kargs_cleanup(kargs, argc);
     kfree(prog_name);
     return result;
   }
+  //kprintf("program name is %s\n", prog_name);
 
 	/* Open the file. */
 	result = vfs_open(prog_name, O_RDONLY, 0, &v);
@@ -70,8 +85,6 @@ int sys_execv(const char *program, char **args){
     kargs_cleanup(kargs, argc);
 		return result;
 	}
-
-	/* clear old as. */
 
 	/* Create a new address space. */
 	as = as_create();
