@@ -69,7 +69,7 @@ int sys_execv(const char *program, char **args){
 	/* Open the file. */
 	result = vfs_open(kprogram, O_RDONLY, 0, &v);
 	if (result) {
-    kfree(program);
+    kfree(kprogram);
     kargs_cleanup(kargs, argc);
 		return result;
 	}
@@ -81,7 +81,7 @@ int sys_execv(const char *program, char **args){
 	as = as_create();
 	if (as ==NULL) {
 		vfs_close(v);
-    kfree(program);
+    kfree(kprogram);
     kargs_cleanup(kargs, argc);
 		return ENOMEM;
 	}
@@ -94,7 +94,7 @@ int sys_execv(const char *program, char **args){
 	result = load_elf(v, &entrypoint);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
-    kfree(program);
+    kfree(kprogram);
     kargs_cleanup(kargs, argc);
 		vfs_close(v);
 		return result;
@@ -107,7 +107,7 @@ int sys_execv(const char *program, char **args){
 	result = as_define_stack(as, &stackptr);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
-    kfree(program);
+    kfree(kprogram);
     kargs_cleanup(kargs, argc);
 		return result;
 	}
@@ -138,7 +138,7 @@ int sys_execv(const char *program, char **args){
   // HARD PART: COPY ARGS TO USER STACK
 
   as_destroy(as_old);
-  kfree(program_kernel);
+  kfree(kprogram);
   // might want to free kargs
   for (int i = 0; i <= argc; i++) {
     kfree(kargs[i]);
