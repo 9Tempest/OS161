@@ -44,13 +44,14 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
-
+#include "opt-A2.h"
 /*
  * Load program "progname" and start running it in usermode.
  * Does not return except on error.
  *
  * Calls vfs_open on progname and thus may destroy it.
  */
+#if OPT_A2
 int
 runprogram(char *progname,char**args, int argc)
 {
@@ -105,4 +106,6 @@ runprogram(char *progname,char**args, int argc)
 	panic("enter_new_process returned\n");
 	return EINVAL;
 }
+#endif
+
 

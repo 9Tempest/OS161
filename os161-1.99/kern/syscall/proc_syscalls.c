@@ -16,7 +16,8 @@
 #include <kern/fcntl.h>
 #include <mips/types.h>
 
-
+#if OPT_A2
+//clean up a kernel arg arr
 void kargs_cleanup(char** kargs, int argc){
   for (int i = 0; i < argc; i++){
     kfree(kargs[i]);
@@ -139,7 +140,7 @@ int sys_execv(const char *program, char **args){
   return (0);
 }
 
-#if OPT_A2
+
   /* this implementation of sys__exit does not do anything with the exit code */
   /* this needs to be fixed to get exit() and waitpid() working properly */
 

@@ -38,7 +38,7 @@
 #include <addrspace.h>
 #include <vm.h>
 #include <copyinout.h>
-
+#include "opt-A2.h"
 /*
  * Dumb MIPS-only "VM system" that is intended to only be just barely
  * enough to struggle off the ground.
@@ -342,7 +342,7 @@ as_complete_load(struct addrspace *as)
 	(void)as;
 	return 0;
 }
-
+#if OPT_A2
 int
 as_define_stack(struct addrspace *as, vaddr_t *stackptr, char** args, int argc)
 {
@@ -374,11 +374,14 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr, char** args, int argc)
 		err = copyout((const void*)&stack_args[i], (userptr_t)*stackptr, sizeof(vaddr_t));
 		KASSERT(!err);
 	}
+	kfree(stack_args);
+	
 
 
 	
 	return 0;
 }
+#endif
 
 int
 as_copy(struct addrspace *old, struct addrspace **ret)
