@@ -345,8 +345,8 @@ as_complete_load(struct addrspace *as)
 int
 as_define_stack(struct addrspace *as, vaddr_t *stackptr, char** args, int argc)
 {
-	(void*)args;
-	(void*)argc;
+	(void)args;
+	(void)argc;
 	KASSERT(as->as_stackpbase != 0);
 
 	*stackptr = USERSTACK;
