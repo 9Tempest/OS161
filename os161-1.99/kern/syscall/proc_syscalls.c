@@ -71,8 +71,7 @@ int sys_execv(const char *program, char **args){
 		return result;
 	}
 
-	/* We should be a new process. */
-	KASSERT(curproc_getas() == NULL);
+	/* clear old as. */
 
 	/* Create a new address space. */
 	as = as_create();
