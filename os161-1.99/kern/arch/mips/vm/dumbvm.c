@@ -364,7 +364,7 @@ as_define_stack(struct addrspace *as, vaddr_t *stackptr, char** args, int argc)
 	}
 	//copy nullptr
 	*stackptr -= sizeof(vaddr_t);
-	stack_args[argc] = NULL;
+	stack_args[argc] = (vaddr_t)NULL;
 	err = copyout((const void*)&stack_args[argc], (userptr_t)*stackptr, sizeof(vaddr_t));
 	KASSERT(!err);
 
