@@ -72,8 +72,6 @@ int sys_execv(const char *program, char **args){
 	}
 
 	/* clear old as. */
-	struct addrspace* oldas = curproc_getas();
-  as_destroy(oldas);
 
 	/* Create a new address space. */
 	as = as_create();
@@ -85,8 +83,9 @@ int sys_execv(const char *program, char **args){
 	}
 
 	/* Switch to it and activate it. */
-	curproc_setas(as);
+	struct addrspace* oldas = curproc_setas(as);
 	as_activate();
+  kfree(oldas);
 
 	/* Load the executable. */
 	result = load_elf(v, &entrypoint);
