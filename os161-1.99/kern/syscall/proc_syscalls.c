@@ -46,6 +46,7 @@ int sys_execv(const char *program, char **args){
       int karg_size = strlen(args[i])+1;
       kargs[i] = kmalloc(karg_size * sizeof(char));
       result = copyin((const_userptr_t)args[i], kargs[i], karg_size);
+      kprintf("arg %d is %s", i, kargs[i]);
     }
   }
   if (result){
@@ -62,7 +63,7 @@ int sys_execv(const char *program, char **args){
     kfree(prog_name);
     return result;
   }
-  kprintf("program name is %s", prog_name);
+  //kprintf("program name is %s\n", prog_name);
 
 	/* Open the file. */
 	result = vfs_open(prog_name, O_RDONLY, 0, &v);
