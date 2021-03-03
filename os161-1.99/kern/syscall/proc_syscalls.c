@@ -101,7 +101,7 @@ int sys_execv(const char *program, char **args){
 	vfs_close(v);
 
 	/* Define the user stack in the address space */
-	result = as_define_stack(as, &stackptr);
+	result = as_define_stack(as, &stackptr, kargs, argc);
 	if (result) {
 		/* p_addrspace will go away when curproc is destroyed */
     kfree(prog_name);
@@ -109,8 +109,9 @@ int sys_execv(const char *program, char **args){
 		return result;
 	}
 
+
 	/* Warp to user mode. */
-	enter_new_process(0 /*argc*/, NULL /*userspace addr of argv*/,
+	enter_new_process(argc /*argc*/, NULL /*userspace addr of argv*/,
 			  stackptr, entrypoint);
 	
 	/* enter_new_process does not return. */
