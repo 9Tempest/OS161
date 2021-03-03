@@ -83,9 +83,8 @@ int sys_execv(const char *program, char **args){
 	}
 
 	/* Switch to it and activate it. */
-	struct addrspace* oldas = curproc_setas(as);
+	curproc_setas(as);
 	as_activate();
-  kfree(oldas);
 
 	/* Load the executable. */
 	result = load_elf(v, &entrypoint);
