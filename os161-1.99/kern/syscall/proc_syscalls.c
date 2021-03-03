@@ -51,12 +51,12 @@ int sys_execv(const char *program, char **args){
       kargs[i] = kmalloc(karg_size * sizeof(char));
       if (!kargs[i]){
         kargs_cleanup(kargs, i);
-        return ENOMEN;
+        return ENOMEM;
       }
       result = copyin((const_userptr_t)args[i], kargs[i], karg_size);
       if (result){
         kargs_cleanup(kargs, i+1);
-        return ENOMEM;
+        return result;
       }
       //kprintf("arg %d is %s", i, kargs[i]);
     }
@@ -68,7 +68,7 @@ int sys_execv(const char *program, char **args){
   char* prog_name = kmalloc(prog_name_size * sizeof(char));
   if (!prog_name) {
     kargs_cleanup(kargs, argc);
-    return ENOMEN;
+    return ENOMEM;
   }
   result = copyin((const_userptr_t)program, prog_name, prog_name_size);
   if (result) {
@@ -85,8 +85,6 @@ int sys_execv(const char *program, char **args){
     kargs_cleanup(kargs, argc);
 		return result;
 	}
-
-	/* clear old as. */
 
 	/* Create a new address space. */
 	as = as_create();
