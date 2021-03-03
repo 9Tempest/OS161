@@ -345,11 +345,37 @@ as_complete_load(struct addrspace *as)
 int
 as_define_stack(struct addrspace *as, vaddr_t *stackptr, char** args, int argc)
 {
-	(void)args;
-	(void)argc;
 	KASSERT(as->as_stackpbase != 0);
-
 	*stackptr = USERSTACK;
+	if (argc == 0){
+		return 0;	
+	}
+	int err;
+	vaddr_t *stack_args = kmalloc((argc+1) * sizeof(vaddr_t));
+	*stackptr -= 4;
+	//copy args
+	for (int i = argc-1; i >= 0; i--){
+		int len = strlen(args[i])+1;
+		*stackptr -= ROUNDUP(len, 4);
+		err = copyout((const void*)args[i], (userptr_t)*stackptr, len);
+		KASSERT(!err);
+		stack_args[i] = *stackptr;
+	}
+	//copy nullptr
+	*stackptr -= sizeof(vaddr_t);
+	stack_args[argc] = NULL;
+	err = copyout((const void*)&stack_args[argc], (userptr_t)*stackptr, sizeof(vaddr_t));
+	KASSERT(!err);
+
+	//copy ptr
+	for (int i = argc-1; i >= 0; i--){
+		*stackptr -= sizeof(vaddr_t);
+		err = copyout((const void*)&stack_args[i], (userptr_t)*stackptr, sizeof(vaddr_t));
+		KASSERT(!err);
+	}
+
+
+	
 	return 0;
 }
 

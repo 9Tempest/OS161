@@ -98,7 +98,7 @@ int sys_execv(const char *program, char **args){
 	/* Switch to it and activate it. */
 	struct addrspace * old_as = curproc_setas(as);
 	as_activate();
-  as_destroy(old_as);
+  
 
 	/* Load the executable. */
 	result = load_elf(v, &entrypoint);
@@ -122,15 +122,18 @@ int sys_execv(const char *program, char **args){
 		return result;
 	}
 
+  //cleanup
+  kfree(prog_name);
+  kargs_cleanup(kargs, argc);
+  as_destroy(old_as);
 
 	/* Warp to user mode. */
-	enter_new_process(argc /*argc*/, NULL /*userspace addr of argv*/,
-			  stackptr, entrypoint);
+	enter_new_process(argc /*argc*/, stackptr /*userspace addr of argv*/,
+			  ROUNDUP(stackptr, 8), entrypoint);
 	
 	/* enter_new_process does not return. */
 	panic("enter_new_process returned\n");
-  kfree(prog_name);
-  kargs_cleanup(kargs, argc);
+  
 	return EINVAL;
 
   return (0);
