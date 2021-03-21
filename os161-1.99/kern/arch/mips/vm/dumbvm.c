@@ -197,11 +197,10 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 			continue;
 		}
 		ehi = faultaddress;
+		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
 		if (is_text && as->is_loaded){
 			elo &= ~TLBLO_DIRTY;
-		}	else{
-			elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-		}
+		}			
 		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
 		tlb_write(ehi, elo, i);
 		splx(spl);
@@ -210,6 +209,9 @@ vm_fault(int faulttype, vaddr_t faultaddress)
 	#if OPT_A3
 	ehi = faultaddress;
 	elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+	if (is_text && as->is_loaded){
+		elo &= ~TLBLO_DIRTY;
+	}
 	DEBUG(DB_VM, "tlb full, dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
 	tlb_random(ehi, elo);
 	splx(spl);
@@ -352,18 +354,8 @@ as_prepare_load(struct addrspace *as)
 int
 as_complete_load(struct addrspace *as)
 {
-	uint32_t ehi, elo;
-	vaddr_t vbase1, vtop1;
 	as->is_loaded = true;
-	vbase1 = as->as_vbase1;
-	vtop1 = vbase1 + as->as_npages1 * PAGE_SIZE;
-	for (size_t i=0; i<NUM_TLB; i++) {
-		tlb_read(&ehi, &elo, i);
-		if (ehi <= vtop1 && ehi >= vbase1){
-			elo &= ~TLBLO_DIRTY;
-			tlb_write(ehi, elo, i);
-		}	
-	}
+	
 	return 0;
 }
 #if OPT_A2
