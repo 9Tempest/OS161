@@ -113,60 +113,7 @@ kill_curthread(vaddr_t epc, unsigned code, vaddr_t vaddr)
 	 */
 
 	#if OPT_A3
-		
-	DEBUG(DB_SYSCALL,"Syscall: _exit(%d)\n",exitcode);
-
-	struct addrspace *as;
-	struct proc *p = curproc;
-	
-	bool can_delete = false;
-	
-	for (unsigned int i = 0 ; i < array_num(p->children); i++){
-		struct proc *child = (struct proc *)array_get(p->children, i);
-		if (!proc_check_alive(child)){
-		proc_destroy(child);
-		array_remove(p->children, i);
-		i--;
-		}
-	}
-
-	// a proc can only delete itself when its parent is NULL or dead
-	lock_acquire(p->p_thread_lock);
-	if (!p->parent || !p->parent->is_alive){
-		can_delete = true;
-	}
-	lock_release(p->p_thread_lock);
-
-	
-
-	KASSERT(curproc->p_addrspace != NULL);
-	as_deactivate();
-	/*
-	* clear p_addrspace before calling as_destroy. Otherwise if
-	* as_destroy sleeps (which is quite possible) when we
-	* come back we'll be calling as_activate on a
-	* half-destroyed address space. This tends to be
-	* messily fatal.
-	*/
-	as = curproc_setas(NULL);
-	as_destroy(as);
-
-	/* detach this thread from its process */
-	/* note: curproc cannot be used after this call */
-	proc_remthread(curthread);
-
-	/* if this is the last user process in the system, proc_destroy()
-		will wake up the kernel menu thread */
-	if (can_delete){
-		proc_destroy(p);
-	} else {
-		proc_set_dead(p, sig);
-	}
-	
-	
-	thread_exit();
-	/* thread_exit() does not return, so we should never get here */
-	panic("return from thread_exit in sys_exit\n");
+	sys__exit(sig);
 
 	(void) epc;
 	(void) vaddr;
