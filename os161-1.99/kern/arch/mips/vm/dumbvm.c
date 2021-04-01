@@ -134,7 +134,7 @@ free_kpages(vaddr_t addr)
 	spinlock_acquire(&free_lock);
 	paddr_t paddr = KVADDR_TO_PADDR(addr);
 	unsigned int offset = (paddr - ram_begin) / PAGE_SIZE;
-	KASSERT(((int *) PADDR_TO_KVADDR(coremap_start))[offset] = 1);
+	KASSERT(((int *) PADDR_TO_KVADDR(coremap_start))[offset] == 1);
 	((int *) PADDR_TO_KVADDR(coremap_start))[offset] = 0;
 	offset++;
 	
@@ -295,6 +295,9 @@ as_create(void)
 void
 as_destroy(struct addrspace *as)
 {
+	free_kpages(PADDR_TO_KVADDR(as->as_pbase1));
+	free_kpages(PADDR_TO_KVADDR(as->as_pbase2));
+	free_kpages(PADDR_TO_KVADDR(as->as_stackpbase));
 	kfree(as);
 }
 
