@@ -54,6 +54,7 @@
  */
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 // A3
+static struct spinlock free_lock = SPINLOCK_INITIALIZER;
 paddr_t coremap_start;
 paddr_t ram_end;
 paddr_t ram_begin;
@@ -70,6 +71,7 @@ vm_bootstrap(void)
 		((int *) PADDR_TO_KVADDR(coremap_start))[i] = 0;
 	}
 	unsigned int offset = (coremap_size * 4 / PAGE_SIZE ) + 1;
+	kprintf("ram offset is %d", offset);
 	ram_begin = coremap_start + PAGE_SIZE * offset;
 	is_vm_booted = true;
 }
@@ -129,9 +131,18 @@ alloc_kpages(int npages)
 void 
 free_kpages(vaddr_t addr)
 {
-	/* nothing - leak the memory. */
-
-	(void)addr;
+	spinlock_acquire(&free_lock);
+	paddr_t paddr = KVADDR_TO_PADDR(addr);
+	unsigned int offset = (paddr - ram_begin) / PAGE_SIZE;
+	KASSERT(((int *) PADDR_TO_KVADDR(coremap_start))[offset] = 1);
+	((int *) PADDR_TO_KVADDR(coremap_start))[offset] = 0;
+	offset++;
+	
+	while(offset < coremap_size && ((int *) PADDR_TO_KVADDR(coremap_start))[offset] > 1){
+		((int *) PADDR_TO_KVADDR(coremap_start))[offset] = 0;
+		offset++;
+	}
+	spinlock_release(&free_lock);
 }
 
 void
