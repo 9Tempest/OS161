@@ -101,7 +101,7 @@
 void ram_bootstrap(void);
 paddr_t ram_stealmem(unsigned long npages);
 void ram_getsize(paddr_t *lo, paddr_t *hi);
-
+paddr_t coremap_stealmem(unsigned long npages);
 /*
  * TLB shootdown bits.
  *
@@ -117,6 +117,5 @@ struct tlbshootdown {
 };
 
 #define TLBSHOOTDOWN_MAX 16
-
 
 #endif /* _MIPS_VM_H_ */
