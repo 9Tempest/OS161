@@ -71,7 +71,7 @@ vm_bootstrap(void)
 		((int *) PADDR_TO_KVADDR(coremap_start))[i] = 0;
 	}
 	unsigned int offset = (coremap_size * 4 / PAGE_SIZE ) + 1;
-	kprintf("ram offset is %d", offset);
+	//kprintf("ram offset is %d", offset);
 	ram_begin = coremap_start + PAGE_SIZE * offset;
 	is_vm_booted = true;
 }
