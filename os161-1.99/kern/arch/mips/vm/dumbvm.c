@@ -53,19 +53,33 @@
  * Wrap rma_stealmem in a spinlock.
  */
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
+// A3
+paddr_t coremap_start;
+paddr_t coremap_end;
+unsigned int coremap_size;
+bool is_vm_booted = false;
+//
 
 void
 vm_bootstrap(void)
 {
-	/* Do nothing. */
+	ram_getsize(&coremap_start, &coremap_end);
+	coremap_size = (coremap_start - coremap_end) / PAGE_SIZE;
+	for (unsigned int i = 0; i < coremap_size; i++){
+		((int *) PADDR_TO_KVADDR(coremap_start))[i] = 0;
+	}
+	is_vm_booted = true;
 }
+
+
+
 
 static
 paddr_t
 getppages(unsigned long npages)
 {
 	paddr_t addr;
-
+	
 	spinlock_acquire(&stealmem_lock);
 
 	addr = ram_stealmem(npages);
