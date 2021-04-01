@@ -54,21 +54,28 @@
  */
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 // A3
-paddr_t coremap_start;
-paddr_t coremap_end;
-unsigned int coremap_size;
-bool is_vm_booted = false;
-//
+#if OPT_A3
+static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
+static struct spinlock coremap_lock = SPINLOCK_INITIALIZER;
+static bool coremap_ready = false;
+static unsigned int coremap_size = 0;
+static paddr_t coremap_start = 0;
+static paddr_t coremap_end = 0;
+#endif
 
 void
 vm_bootstrap(void)
 {
-	ram_getsize(&coremap_start, &coremap_end);
-	coremap_size = (coremap_start - coremap_end) / PAGE_SIZE;
-	for (unsigned int i = 0; i < coremap_size; i++){
-		((int *) PADDR_TO_KVADDR(coremap_start))[i] = 0;
-	}
-	is_vm_booted = true;
+#if OPT_A3
+  ram_getsize(&coremap_start, &coremap_end);
+  coremap_size = (coremap_end - coremap_start) / PAGE_SIZE;
+  unsigned int temp = 0;
+  while (temp < coremap_size) {
+    ((int *) PADDR_TO_KVADDR(coremap_start))[temp] = 0;
+    temp++;
+  }
+  coremap_ready = true;
+#endif
 }
 
 
