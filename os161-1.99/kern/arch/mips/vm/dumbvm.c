@@ -78,19 +78,19 @@ vm_bootstrap(void)
 
 
 paddr_t coremap_stealmem(unsigned long npages){
-	unsigned int valid_size = coremap_size - npages + 1;
+	unsigned int valid_size = coremap_size - (unsigned int)npages + 1;
 	for (unsigned int i = 0; i < valid_size; i++){
 		int begin_offset = i;
 		int is_used = ((int*) PADDR_TO_KVADDR(coremap_start))[i];
 		if (is_used) continue;
-		int curr_page = 1;
+		unsigned long curr_page = 1;
 		while(!is_used && curr_page < npages){
 			if (i + curr_page >= coremap_size) return 0;
 			is_used = ((int*) PADDR_TO_KVADDR(coremap_start))[i + curr_page];
 			if (is_used) continue;
 			curr_page++;
 		}
-		for (int j = 1; j <= npages;j++){
+		for (int j = 1; j <= (int)npages;j++){
 			((int*) PADDR_TO_KVADDR(coremap_start))[i] = j;
 			i++;
 		}
