@@ -54,14 +54,11 @@
  */
 static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 // A3
-#if OPT_A3
-static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
-static struct spinlock coremap_lock = SPINLOCK_INITIALIZER;
 static bool coremap_ready = false;
 static unsigned int coremap_size = 0;
 static paddr_t coremap_start = 0;
 static paddr_t coremap_end = 0;
-#endif
+
 
 void
 vm_bootstrap(void)
@@ -78,6 +75,43 @@ vm_bootstrap(void)
 #endif
 }
 
+paddr_t
+coremap_stealmem(unsigned long numpages)
+{
+  unsigned int temp = 0;
+  while (temp < coremap_size) {
+    int cur = ((int*) PADDR_TO_KVADDR(coremap_start))[temp];
+    unsigned int potential_start = temp;
+    unsigned long  pages = 0;
+
+    while (potential_start + pages < coremap_size && cur == 0) {
+
+      pages++;
+
+      if (pages == numpages) {
+
+        temp = potential_start;
+
+        for (unsigned long i = 1; i <= numpages; i++) {
+          ((int *) PADDR_TO_KVADDR(coremap_start))[temp] = (int) i;
+          temp++;
+        }
+        unsigned int ps = potential_start;
+        unsigned long np = numpages;
+        (void)ps;
+        (void)np;
+        return (potential_start + 1) * PAGE_SIZE + coremap_start;
+      }
+
+      temp++;
+      cur = ((int*) PADDR_TO_KVADDR(coremap_start))[temp];
+    }
+
+    temp++;
+  }
+
+  return 0;
+}
 
 
 
@@ -88,9 +122,12 @@ getppages(unsigned long npages)
 	paddr_t addr;
 	
 	spinlock_acquire(&stealmem_lock);
-
-	addr = ram_stealmem(npages);
-	
+	if (coremap_ready){
+		addr = coremap_stealmem(npages);
+	}	else {
+		addr = ram_stealmem(npages);
+	}
+		
 	spinlock_release(&stealmem_lock);
 	return addr;
 }
